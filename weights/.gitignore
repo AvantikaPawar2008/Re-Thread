@@ -1,0 +1,8 @@
+# Ignore trained weight files
+*.pt
+*.onnx
+*.bin
+*.pth
+*.joblib
+*.pkl
+!README.md

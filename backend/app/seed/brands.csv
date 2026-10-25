@@ -1,0 +1,9 @@
+name,aliases,takeback_active,takeback_terms,accepted_materials,notes
+H&M,"hm,h&m,hennes and mauritz",True,"Garment Collecting programme accepts unwanted clothes of any brand in any condition for discount voucher",all,"Active in Phoenix Marketcity Pune"
+Zara,"zara,inditex",True,"Join Life in-store donation container for textile collection and reuse",all,"Drop box located in Pune retail stores"
+Marks & Spencer,"m&s,marks and spencer",True,"Clothes Exchange / Shwop programme with partner charities",all,"Accepts garments and home textiles"
+Levi's,"levis,levi strauss",True,"Levi's Tailor Shop & Recycle program; accepts denim for repurposing or recycling",natural,"Focus on denim and cotton garments"
+Fabindia,"fabindia,fab india",True,"Fabindia circular collection drives for handloom and cotton apparel",natural,"Accepts natural textiles for artisan upcycling"
+Decathlon,"decathlon,oxelo,kalenji,quechua,domyos",True,"Buyback and recycle programme for sportswear, fleece and synthetic gear",synthetic,"Active at Amanora and Wagholi Pune hubs"
+Raymond,"raymond,park avenue,colorplus,parx",False,"Custom tailoring and alteration available; seasonal take-back drives",natural,"Leading suiting and tailoring network in Pune"
+Patagonia,"patagonia,worn wear",True,"Worn Wear programme repairs and takes back any Patagonia garment",all,"Pioneer in circular garment repair & recycling"

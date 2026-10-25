@@ -1,0 +1,6 @@
+pathway,min_condition,max_damage_percent,eligible_materials,requires_brand_partner,is_active,notes
+reuse_resell,gently_used,5.0,all,False,True,"High residual value; garment has minimal wear and negligible damage"
+repair,worn,25.0,all,False,True,"Garment is structurally restorable; damage area is under 25%"
+donate,worn,10.0,all,False,True,"Clean and dignified wearable garments for community redistribution"
+recycle,heavily_worn,100.0,all,False,True,"Suitable for mechanical or chemical fiber reclamation regardless of condition"
+brand_takeback,heavily_worn,100.0,all,True,True,"Requires known brand with an active takeback and reward agreement"
