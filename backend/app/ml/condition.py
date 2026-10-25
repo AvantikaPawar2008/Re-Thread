@@ -24,6 +24,7 @@ logger = logging.getLogger("ml.condition")
 WEIGHTS_PATH = Path(__file__).resolve().parent.parent.parent.parent / "weights" / "condition.pt"
 
 CONDITION_CLASSES: List[ConditionLabel] = ["new", "gently_used", "worn", "heavily_worn"]
+_condition_classes: List[str] = list(CONDITION_CLASSES)
 
 # Transform pipeline matching training
 _eval_transforms = transforms.Compose([
@@ -37,9 +38,14 @@ _condition_model: Optional[Any] = None
 _is_stub_mode: bool = True
 
 
+def get_condition_classes() -> List[str]:
+    """Returns the active condition class label order (from checkpoint or default)."""
+    return list(_condition_classes)
+
+
 def load_condition_model() -> bool:
     """Load trained ResNet-18 condition weights once at startup."""
-    global _condition_model, _is_stub_mode
+    global _condition_model, _is_stub_mode, _condition_classes
 
     if not WEIGHTS_PATH.exists():
         logger.warning(
@@ -48,17 +54,26 @@ def load_condition_model() -> bool:
         )
         _condition_model = None
         _is_stub_mode = True
+        _condition_classes = list(CONDITION_CLASSES)
         return False
 
     try:
         logger.info(f"Loading condition classifier weights from '{WEIGHTS_PATH}'...")
-        # 1. Build ResNet-18 architecture with 4 output classes
+        # 1. Load checkpoint and extract class names if present
+        checkpoint = torch.load(str(WEIGHTS_PATH), map_location="cpu")
+
+        if isinstance(checkpoint, dict) and "class_names" in checkpoint:
+            _condition_classes = list(checkpoint["class_names"])
+            logger.info(f"Read class order from checkpoint: {_condition_classes}")
+        else:
+            _condition_classes = list(CONDITION_CLASSES)
+
+        # 2. Build ResNet-18 architecture with matching output classes
         model = resnet18(weights=None)
         num_features = model.fc.in_features
-        model.fc = nn.Linear(num_features, len(CONDITION_CLASSES))
+        model.fc = nn.Linear(num_features, len(_condition_classes))
 
-        # 2. Load state dict
-        checkpoint = torch.load(str(WEIGHTS_PATH), map_location="cpu")
+        # 3. Load state dict
         if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
             model.load_state_dict(checkpoint["model_state_dict"])
         elif isinstance(checkpoint, dict):
@@ -78,6 +93,7 @@ def load_condition_model() -> bool:
         )
         _condition_model = None
         _is_stub_mode = True
+        _condition_classes = list(CONDITION_CLASSES)
         return False
 
 
@@ -138,7 +154,7 @@ def analyze_condition(
     mean_probs = torch.stack(all_probs).mean(dim=0)
     top_idx = int(torch.argmax(mean_probs).item())
     top_prob = float(mean_probs[top_idx].item())
-    predicted_label = CONDITION_CLASSES[top_idx]
+    predicted_label = _condition_classes[top_idx]
 
     # If top probability falls below configurable threshold, default to conservative wear estimate
     if top_prob < confidence_threshold and predicted_label == "new":

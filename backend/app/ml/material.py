@@ -26,6 +26,7 @@ logger = logging.getLogger("ml.material")
 WEIGHTS_PATH = Path(__file__).resolve().parent.parent.parent.parent / "weights" / "material.pt"
 
 MATERIAL_CLASSES: List[MaterialLabel] = ["natural", "synthetic", "blend"]
+_material_classes: List[str] = list(MATERIAL_CLASSES)
 
 # Standard evaluation transform pipeline
 _eval_transforms = transforms.Compose([
@@ -39,9 +40,14 @@ _material_model: Optional[Any] = None
 _is_stub_mode: bool = True
 
 
+def get_material_classes() -> List[str]:
+    """Returns the active material class label order (from checkpoint or default)."""
+    return list(_material_classes)
+
+
 def load_material_model() -> bool:
     """Load trained ResNet-18 material weights once at startup."""
-    global _material_model, _is_stub_mode
+    global _material_model, _is_stub_mode, _material_classes
 
     if not WEIGHTS_PATH.exists():
         logger.warning(
@@ -50,17 +56,26 @@ def load_material_model() -> bool:
         )
         _material_model = None
         _is_stub_mode = True
+        _material_classes = list(MATERIAL_CLASSES)
         return False
 
     try:
         logger.info(f"Loading material classifier weights from '{WEIGHTS_PATH}'...")
-        # 1. Build ResNet-18 architecture with 3 output classes
+        # 1. Load checkpoint and extract class names if present
+        checkpoint = torch.load(str(WEIGHTS_PATH), map_location="cpu")
+
+        if isinstance(checkpoint, dict) and "class_names" in checkpoint:
+            _material_classes = list(checkpoint["class_names"])
+            logger.info(f"Read class order from checkpoint: {_material_classes}")
+        else:
+            _material_classes = list(MATERIAL_CLASSES)
+
+        # 2. Build ResNet-18 architecture with matching output classes
         model = resnet18(weights=None)
         num_features = model.fc.in_features
-        model.fc = nn.Linear(num_features, len(MATERIAL_CLASSES))
+        model.fc = nn.Linear(num_features, len(_material_classes))
 
-        # 2. Load state dict
-        checkpoint = torch.load(str(WEIGHTS_PATH), map_location="cpu")
+        # 3. Load state dict
         if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
             model.load_state_dict(checkpoint["model_state_dict"])
         elif isinstance(checkpoint, dict):
@@ -80,6 +95,7 @@ def load_material_model() -> bool:
         )
         _material_model = None
         _is_stub_mode = True
+        _material_classes = list(MATERIAL_CLASSES)
         return False
 
 
@@ -146,7 +162,7 @@ def analyze_material(
     mean_probs = torch.stack(all_probs).mean(dim=0)
     top_idx = int(torch.argmax(mean_probs).item())
     top_prob = float(mean_probs[top_idx].item())
-    raw_label = MATERIAL_CLASSES[top_idx]
+    raw_label = _material_classes[top_idx]
 
     # Confidence Gating: if top probability is below threshold, return 'uncertain'
     final_label: MaterialLabel = raw_label if top_prob >= confidence_threshold else "uncertain"
