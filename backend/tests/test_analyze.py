@@ -1,7 +1,7 @@
 """Tests for POST /analyze endpoint."""
 
 import io
-from backend.app.schemas import AnalyzeResponse
+from app.schemas import AnalyzeResponse
 
 
 def test_analyze_with_garment_and_tag(client):

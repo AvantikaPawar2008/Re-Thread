@@ -11,10 +11,10 @@ import {
   Scissors,
   Layers,
   MapPin,
-  HelpCircle,
   RefreshCw,
   Eye,
   EyeOff,
+  ChevronDown,
 } from "lucide-react";
 import { AnalyzeResponse, RecommendResponse } from "@/types";
 import { getRecommendations } from "@/lib/api";
@@ -26,18 +26,38 @@ interface AnalysisResultsSectionProps {
   onReset: () => void;
 }
 
+const WEIGHT_OPTIONS = [
+  { value: 0.25, label: "T-shirt (0.25 kg)" },
+  { value: 0.5, label: "Shirt or trousers (0.5 kg)" },
+  { value: 0.8, label: "Denim jeans (0.8 kg)" },
+  { value: 1.2, label: "Jacket or coat (1.2 kg)" },
+];
+
+const MATERIAL_TEXT: Record<string, string> = {
+  natural: "Natural fibre",
+  synthetic: "Synthetic fibre",
+  blend: "Fibre blend",
+  uncertain: "Unclear fibre",
+};
+
+function confidenceNote(pct: number): string {
+  if (pct >= 80) return "The model is fairly sure. Trust this unless the photo looks unusual.";
+  if (pct >= 60) return "The model is somewhat sure. A clearer photo would help.";
+  return "The model is unsure. Treat this as a rough guess.";
+}
+
 export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
   analysis,
-  previewImages,
   onRecommendationsReady,
   onReset,
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showMaterialCam, setShowMaterialCam] = useState<boolean>(false);
-  const [showConditionCam, setShowConditionCam] = useState<boolean>(false);
+  const [showMaterialCam, setShowMaterialCam] = useState(false);
+  const [showConditionCam, setShowConditionCam] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
-  // Default coordinates to Central Pune (FC Road)
+  // Default coordinates: Central Pune (FC Road)
   const [latitude, setLatitude] = useState<number>(18.5204);
   const [longitude, setLongitude] = useState<number>(73.8567);
   const [locationName, setLocationName] = useState<string>("Pune (Shivajinagar / FC Rd)");
@@ -45,6 +65,22 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
 
   const isCompositionUncertain =
     analysis.composition_status === "uncertain" || analysis.material.label === "uncertain";
+
+  const materialPct = Math.round(analysis.material.confidence * 100);
+  const conditionPct = Math.round(analysis.condition.confidence * 100);
+  const damagePct = analysis.damage.area_percent;
+  const conditionText = analysis.condition.label.replace(/_/g, " ");
+  const hasComposition = Object.keys(analysis.tag.composition).length > 0;
+
+  const damageLevel = damagePct > 20 ? "high" : damagePct > 5 ? "moderate" : "low";
+  const summaryTitle = analysis.damage.detected
+    ? damagePct < 25
+      ? "Repairable with some wear"
+      : "Heavily damaged"
+    : "Looks intact";
+  const summaryText = analysis.damage.detected
+    ? `About ${damagePct}% of the garment shows damage (${damageLevel}). Garments with less than 25% damage are usually eligible for repair.`
+    : "No significant damage was detected. This garment is a good candidate for resale, donation or reuse.";
 
   const handleUseBrowserLocation = () => {
     if (!navigator.geolocation) {
@@ -55,7 +91,7 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
       (pos) => {
         setLatitude(Number(pos.coords.latitude.toFixed(4)));
         setLongitude(Number(pos.coords.longitude.toFixed(4)));
-        setLocationName(`Current GPS (${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)})`);
+        setLocationName(`Current location (${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)})`);
       },
       (err) => {
         alert(`Location permission denied or unavailable: ${err.message}`);
@@ -70,409 +106,313 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
       const recs = await getRecommendations(analysis, latitude, longitude, weightKg);
       onRecommendationsReady(recs, { lat: latitude, lon: longitude });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to generate recommendations.";
+      const msg = err instanceof Error ? err.message : "Could not generate recommendations. Please try again.";
       setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatConfidence = (val: number) => Math.round(val * 100);
-
-  const isVLM = analysis.source === "vlm";
-  const isStub = !analysis.source || analysis.source === "stub";
-  const reasoning = analysis.reasoning ?? {};
-
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="mx-auto max-w-5xl px-5 py-10 text-slate-900">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 mb-2">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            AI Garment Diagnosis Complete
-          </span>
-          {/* Source badge */}
-          {isVLM && (
-            <span className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-100 text-violet-800 border border-violet-200">
-              <Sparkles className="w-3 h-3" />
-              AI vision analysis (estimate)
-            </span>
-          )}
-          {isStub && (
-            <span className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
-              Demo mode
-            </span>
-          )}
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
-            Garment Visual & Material Analysis
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Review computer vision findings below before calculating eligible pathways.
+          <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-[#e6eef5] px-3 py-1 text-xs font-semibold text-[#0b2a44]">
+            <CheckCircle2 className="h-3.5 w-3.5 text-[#1d5c8c]" aria-hidden />
+            Analysis complete
           </p>
+          <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Your garment, assessed</h1>
+          <p className="mt-2 text-sm text-slate-600">Here is what we found. Review it, then see your best options.</p>
         </div>
         <button
           onClick={onReset}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors w-fit"
+          className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-[#1d5c8c] hover:text-[#1d5c8c]"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
-          Scan Another
+          <RotateCcw className="h-4 w-4" aria-hidden />
+          Scan another
         </button>
       </div>
 
-      {/* "Uncertain" State Banner if Applicable */}
+      {/* Summary */}
+      <section className="mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#0b2a44] via-[#1d5c8c] to-[#2f7ab0] p-7 text-white shadow-xl">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#bdd9ee]">Overall</p>
+        <h2 className="mt-2 text-2xl font-extrabold tracking-tight md:text-3xl">{summaryTitle}</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#d6e4ef]">{summaryText}</p>
+        <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold">
+          <span className="rounded-full bg-white/15 px-3 py-1.5">
+            {MATERIAL_TEXT[analysis.material.label] ?? analysis.material.label}
+          </span>
+          <span className="rounded-full bg-white/15 px-3 py-1.5 capitalize">{conditionText}</span>
+          <span className="rounded-full bg-white/15 px-3 py-1.5">
+            {analysis.damage.detected ? "Damage found" : "No damage found"}
+          </span>
+        </div>
+      </section>
+
       {isCompositionUncertain && (
-        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-900">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <h2 className="font-bold text-sm text-amber-950">
-                Composition Uncertainty Flagged [Honest AI Transparency]
-              </h2>
-              <p className="text-xs text-amber-800 leading-relaxed">
-                RGB optical cameras cannot reliably resolve fine blend ratios (e.g. 60/40 vs 80/20) without spectral NIR/HSI hardware, or the care tag had partial/conflicting data.
-                Our decision engine gracefully routes this garment without blocking you, providing both recycling and drop-off alternatives!
-              </p>
-            </div>
+        <div className="mb-6 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden />
+          <div>
+            <h2 className="text-sm font-bold">We couldn't confirm the fibre content</h2>
+            <p className="mt-1 text-sm leading-relaxed text-amber-800">
+              A photo can't reliably tell blends apart, and the care label may be missing or unclear. We'll still
+              suggest both recycling and drop-off options.
+            </p>
           </div>
         </div>
       )}
 
-      {/* Main 4 Analysis Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        {/* 1. Material Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-emerald-600" />
-                Material Classification
-              </span>
-              <span
-                className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${
-                  analysis.material.label === "natural"
-                    ? "bg-emerald-100 text-emerald-800"
-                    : analysis.material.label === "synthetic"
-                    ? "bg-sky-100 text-sky-800"
-                    : analysis.material.label === "blend"
-                    ? "bg-purple-100 text-purple-800"
-                    : "bg-amber-100 text-amber-800"
-                }`}
+      {/* Findings */}
+      <div className="grid gap-5 md:grid-cols-2">
+        {/* Material */}
+        <article className="flex flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+            <Layers className="h-4 w-4 text-[#1d5c8c]" aria-hidden />
+            Material
+          </span>
+          <h3 className="mt-4 text-2xl font-extrabold tracking-tight">
+            {MATERIAL_TEXT[analysis.material.label] ?? analysis.material.label}
+          </h3>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">{confidenceNote(materialPct)}</p>
+
+          <div className="mt-5">
+            <div className="mb-1.5 flex justify-between text-xs font-semibold text-slate-600">
+              <span>Confidence</span>
+              <span>{materialPct}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-[#1d5c8c] transition-all duration-700" style={{ width: `${materialPct}%` }} />
+            </div>
+          </div>
+
+          {analysis.material.heatmap_base64 && (
+            <div className="mt-auto pt-5">
+              <button
+                type="button"
+                onClick={() => setShowMaterialCam(!showMaterialCam)}
+                aria-expanded={showMaterialCam}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1d5c8c] hover:underline"
               >
-                {analysis.material.label}
-              </span>
+                {showMaterialCam ? <EyeOff className="h-3.5 w-3.5" aria-hidden /> : <Eye className="h-3.5 w-3.5" aria-hidden />}
+                {showMaterialCam ? "Hide where the model looked" : "See where the model looked"}
+              </button>
+              {showMaterialCam && (
+                <img
+                  src={analysis.material.heatmap_base64}
+                  alt="Heatmap of the areas the material model focused on"
+                  className="mt-3 h-40 w-full rounded-2xl object-cover"
+                />
+              )}
             </div>
+          )}
+        </article>
 
-            <div className="text-2xl font-extrabold text-slate-900 capitalize mb-1">
-              {analysis.material.label === "uncertain" ? "Composition Uncertain" : `${analysis.material.label} Fiber`}
+        {/* Condition */}
+        <article className="flex flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+            <Sparkles className="h-4 w-4 text-[#1d5c8c]" aria-hidden />
+            Condition
+          </span>
+          <h3 className="mt-4 text-2xl font-extrabold capitalize tracking-tight">{conditionText}</h3>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            Based on fading, pilling and how well the fabric holds its shape.
+          </p>
+
+          <div className="mt-5">
+            <div className="mb-1.5 flex justify-between text-xs font-semibold text-slate-600">
+              <span>Confidence</span>
+              <span>{conditionPct}%</span>
             </div>
-            <p className="text-xs text-slate-500 mb-4">
-              Coarse optical prediction via fine-tuned ResNet-18 (natural, synthetic, blend, or uncertain).
-            </p>
-            {reasoning.material && (
-              <p className="text-xs text-violet-700 italic bg-violet-50 rounded-lg px-2.5 py-1.5 mb-2 border border-violet-100">
-                💬 {reasoning.material}
-              </p>
-            )}
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-[#1d5c8c] transition-all duration-700" style={{ width: `${conditionPct}%` }} />
+            </div>
           </div>
 
-          <div>
-            <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
-              <span>Confidence Score</span>
-              <span>{formatConfidence(analysis.material.confidence)}%</span>
-            </div>
-            <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                style={{ width: `${formatConfidence(analysis.material.confidence)}%` }}
-              />
-            </div>
-
-            {analysis.material.heatmap_base64 && (
-              <div className="mt-3 pt-2.5 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowMaterialCam(!showMaterialCam)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 transition-colors"
-                >
-                  {showMaterialCam ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  {showMaterialCam ? "Hide Grad-CAM Attention" : "Explain Visual AI (Grad-CAM)"}
-                </button>
-                {showMaterialCam && (
-                  <div className="mt-2 p-2 bg-slate-900 rounded-xl overflow-hidden shadow-inner text-white">
-                    <img
-                      src={analysis.material.heatmap_base64}
-                      alt="Material Grad-CAM Heatmap"
-                      className="w-full h-36 object-cover rounded-lg"
-                    />
-                    <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-300 px-0.5">
-                      <span>Layer: ResNet18.layer4[-1]</span>
-                      <span className="text-emerald-400 font-semibold">🔴 Fabric Texture Attention</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 2. Condition Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-teal-600" />
-                Condition & Wear
-              </span>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 capitalize">
-                {analysis.condition.label.replace("_", " ")}
-              </span>
-            </div>
-
-            <div className="text-2xl font-extrabold text-slate-900 capitalize mb-1">
-              {analysis.condition.label.replace("_", " ")}
-            </div>
-            <p className="text-xs text-slate-500 mb-4">
-              Wear assessment (fading, pilling, structural retention) predicted via visual texture model.
-            </p>
-            {reasoning.condition && (
-              <p className="text-xs text-violet-700 italic bg-violet-50 rounded-lg px-2.5 py-1.5 mb-2 border border-violet-100">
-                💬 {reasoning.condition}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
-              <span>Confidence Score</span>
-              <span>{formatConfidence(analysis.condition.confidence)}%</span>
-            </div>
-            <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-teal-500 transition-all duration-500"
-                style={{ width: `${formatConfidence(analysis.condition.confidence)}%` }}
-              />
-            </div>
-
-            {analysis.condition.heatmap_base64 && (
-              <div className="mt-3 pt-2.5 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowConditionCam(!showConditionCam)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 hover:text-teal-800 transition-colors"
-                >
-                  {showConditionCam ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  {showConditionCam ? "Hide Grad-CAM Attention" : "Explain Visual AI (Grad-CAM)"}
-                </button>
-                {showConditionCam && (
-                  <div className="mt-2 p-2 bg-slate-900 rounded-xl overflow-hidden shadow-inner text-white">
-                    <img
-                      src={analysis.condition.heatmap_base64}
-                      alt="Condition Grad-CAM Heatmap"
-                      className="w-full h-36 object-cover rounded-lg"
-                    />
-                    <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-300 px-0.5">
-                      <span>Layer: ResNet18.layer4[-1]</span>
-                      <span className="text-teal-300 font-semibold">🔴 Wear & Surface Analysis</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 3. Damage Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <Scissors className="w-4 h-4 text-rose-500" />
-                Defects & Damage
-              </span>
-              <span
-                className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                  analysis.damage.detected
-                    ? "bg-rose-100 text-rose-800"
-                    : "bg-emerald-100 text-emerald-800"
-                }`}
+          {analysis.condition.heatmap_base64 && (
+            <div className="mt-auto pt-5">
+              <button
+                type="button"
+                onClick={() => setShowConditionCam(!showConditionCam)}
+                aria-expanded={showConditionCam}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1d5c8c] hover:underline"
               >
-                {analysis.damage.detected ? "Damage Detected" : "Intact / No Defects"}
-              </span>
-            </div>
-
-            <div className="text-2xl font-extrabold text-slate-900 mb-1">
-              {analysis.damage.area_percent}% Garment Area
-              {isVLM && (
-                <span className="ml-2 text-xs font-normal text-slate-400">(estimated)</span>
+                {showConditionCam ? <EyeOff className="h-3.5 w-3.5" aria-hidden /> : <Eye className="h-3.5 w-3.5" aria-hidden />}
+                {showConditionCam ? "Hide where the model looked" : "See where the model looked"}
+              </button>
+              {showConditionCam && (
+                <img
+                  src={analysis.condition.heatmap_base64}
+                  alt="Heatmap of the areas the condition model focused on"
+                  className="mt-3 h-40 w-full rounded-2xl object-cover"
+                />
               )}
             </div>
-            <p className="text-xs text-slate-500 mb-4">
-              {isVLM
-                ? "Visual estimate from AI analysis. Best-effort bounding box coordinates."
-                : "YOLOv8 defect bounding evaluation. Items with <25% damage remain eligible for repair restoration."}
-            </p>
-            {reasoning.damage && (
-              <p className="text-xs text-violet-700 italic bg-violet-50 rounded-lg px-2.5 py-1.5 mb-2 border border-violet-100">
-                💬 {reasoning.damage}
-              </p>
-            )}
-          </div>
+          )}
+        </article>
 
-          <div>
-            <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
-              <span>Damaged Surface Proportion</span>
-              <span>{analysis.damage.area_percent}%</span>
+        {/* Damage */}
+        <article className="flex flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+            <Scissors className="h-4 w-4 text-rose-500" aria-hidden />
+            Damage
+          </span>
+          <h3 className="mt-4 text-2xl font-extrabold tracking-tight">
+            {analysis.damage.detected ? `${damagePct}% of the garment` : "No damage found"}
+          </h3>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            {analysis.damage.detected
+              ? "Garments with less than 25% damage can usually be repaired."
+              : "Nothing visible needs repair."}
+          </p>
+
+          <div className="mt-5">
+            <div className="mb-1.5 flex justify-between text-xs font-semibold text-slate-600">
+              <span>Share of damaged area</span>
+              <span>{damagePct}%</span>
             </div>
-            <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  analysis.damage.area_percent > 20
-                    ? "bg-rose-500"
-                    : analysis.damage.area_percent > 5
-                    ? "bg-amber-500"
-                    : "bg-emerald-500"
+                className={`h-full rounded-full transition-all duration-700 ${
+                  damagePct > 20 ? "bg-rose-500" : damagePct > 5 ? "bg-amber-500" : "bg-emerald-500"
                 }`}
-                style={{ width: `${Math.min(100, analysis.damage.area_percent * 2)}%` }}
+                style={{ width: `${Math.min(100, damagePct * 2)}%` }}
               />
             </div>
           </div>
-        </div>
+        </article>
 
-        {/* 4. Care Label / Brand Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <Tag className="w-4 h-4 text-indigo-600" />
-                Care Label & Brand
-              </span>
-              {analysis.tag.brand ? (
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
-                  {analysis.tag.brand}
+        {/* Care label */}
+        <article className="flex flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+            <Tag className="h-4 w-4 text-indigo-600" aria-hidden />
+            Care label
+          </span>
+          <h3 className="mt-4 text-2xl font-extrabold tracking-tight">{analysis.tag.brand || "No label found"}</h3>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            {hasComposition
+              ? "We read the fibre content from the label."
+              : "We couldn't read a fibre content from a label in this photo."}
+          </p>
+
+          {hasComposition && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {Object.entries(analysis.tag.composition).map(([fiber, pct]) => (
+                <span key={fiber} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
+                  {pct}% {fiber}
                 </span>
-              ) : (
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                  Tag Absent
-                </span>
-              )}
+              ))}
             </div>
+          )}
 
-            <div className="text-lg font-bold text-slate-900 mb-2">
-              {analysis.tag.brand ? (
-                <span>Recognized: <strong className="text-indigo-600">{analysis.tag.brand}</strong></span>
-              ) : (
-                <span className="text-slate-500 text-base font-normal">No brand detected on label</span>
-              )}
-            </div>
-
-            {/* Fiber composition chips */}
-            {Object.keys(analysis.tag.composition).length > 0 ? (
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {Object.entries(analysis.tag.composition).map(([fiber, pct]) => (
-                  <span
-                    key={fiber}
-                    className="text-xs font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-700 capitalize"
-                  >
-                    {pct}% {fiber}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-slate-400 italic mb-3">
-                No fiber composition parsed from image.
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
-            <span>OCR Confidence: {formatConfidence(analysis.tag.ocr_confidence)}%</span>
+          <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-5 text-xs text-slate-500">
+            <span>Label reading: {Math.round(analysis.tag.ocr_confidence * 100)}% sure</span>
             {analysis.tag.agrees_with_vision ? (
-              <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Agrees with Vision
+              <span className="flex items-center gap-1 font-semibold text-emerald-700">
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                Matches the photo
               </span>
             ) : (
-              <span className="text-amber-700 font-semibold flex items-center gap-1">
-                <HelpCircle className="w-3.5 h-3.5" />
-                Discrepancy Noted
+              <span className="flex items-center gap-1 font-semibold text-amber-700">
+                <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+                Doesn't fully match
               </span>
             )}
           </div>
-        </div>
+        </article>
       </div>
 
-      {/* Drop-Off Geography & Location Settings Bar */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-50/50 via-teal-50/40 to-slate-50 border border-emerald-200/80 mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Technical details */}
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white">
+        <button
+          type="button"
+          onClick={() => setShowDetails(!showDetails)}
+          aria-expanded={showDetails}
+          className="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-700"
+        >
+          How this was measured
+          <ChevronDown className={`h-4 w-4 transition-transform ${showDetails ? "rotate-180" : ""}`} aria-hidden />
+        </button>
+        {showDetails && (
+          <ul className="space-y-2 border-t border-slate-100 px-5 py-4 text-sm text-slate-600">
+            <li>Material: image classifier (ResNet-18), trained to tell natural, synthetic and blended fabrics apart.</li>
+            <li>Condition: visual texture model estimating fading, pilling and structure.</li>
+            <li>Damage: object detection (YOLOv8) measuring the share of the garment that is damaged.</li>
+            <li>Label: text reading (OCR), cross-checked against what the camera sees.</li>
+          </ul>
+        )}
+      </div>
+
+      {/* Location and weight */}
+      <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <MapPin className="w-4 h-4 text-emerald-700" />
-              <span className="font-bold text-sm text-slate-800">
-                User Drop-off Location (Pune)
-              </span>
-            </div>
-            <p className="text-xs text-slate-600">
-              Active: <strong>{locationName}</strong> · GPS ({latitude}, {longitude})
+            <p className="flex items-center gap-2 text-sm font-bold">
+              <MapPin className="h-4 w-4 text-[#1d5c8c]" aria-hidden />
+              Where are you dropping off?
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Using <span className="font-semibold text-slate-800">{locationName}</span>
             </p>
           </div>
-
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={handleUseBrowserLocation}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors shadow-2xs"
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-[#1d5c8c] hover:text-[#1d5c8c]"
             >
-              Use My Current GPS
+              Use my location
             </button>
-            <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
-              <span>Weight:</span>
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+              <span className="sr-only">Garment weight</span>
               <select
                 value={weightKg}
                 onChange={(e) => setWeightKg(parseFloat(e.target.value))}
-                className="bg-white border border-slate-300 rounded px-2 py-1 text-xs"
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-[#1d5c8c] focus:outline-none"
               >
-                <option value={0.25}>0.25 kg (T-Shirt)</option>
-                <option value={0.50}>0.50 kg (Shirt / Pants)</option>
-                <option value={0.80}>0.80 kg (Denim Jeans)</option>
-                <option value={1.20}>1.20 kg (Jacket / Coat)</option>
+                {WEIGHT_OPTIONS.map((w) => (
+                  <option key={w.value} value={w.value}>
+                    {w.label}
+                  </option>
+                ))}
               </select>
-            </div>
+            </label>
           </div>
         </div>
       </div>
 
-      {/* Error Notice */}
       {error && (
-        <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm">
+        <div role="alert" className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
           {error}
         </div>
       )}
 
-      {/* Recommendation Action Button */}
-      <div className="flex flex-col items-center">
+      {/* Primary action */}
+      <div className="mt-8 flex flex-col items-center gap-3">
         <button
           onClick={handleFetchRecommendations}
           disabled={loading}
-          className="w-full sm:w-auto min-w-[320px] px-8 py-4 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/30 transition-all hover:scale-[1.01] flex items-center justify-center gap-2"
+          className="inline-flex w-full min-w-[280px] items-center justify-center gap-2 rounded-full bg-[#0b2a44] px-8 py-4 text-sm font-bold text-white shadow-lg shadow-[#0b2a44]/25 transition-all hover:bg-[#1d5c8c] disabled:opacity-60 sm:w-auto"
         >
           {loading ? (
             <>
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              <span>Running Hybrid Decision Engine...</span>
+              <RefreshCw className="h-4 w-4 animate-spin" aria-hidden />
+              <span>Finding your best options…</span>
             </>
           ) : (
             <>
-              <Sparkles className="w-4 h-4" />
-              <span>Recommend Best Circular Pathways</span>
-              <ArrowRight className="w-4 h-4" />
+              <Sparkles className="h-4 w-4" aria-hidden />
+              <span>See what to do with this garment</span>
+              <ArrowRight className="h-4 w-4" aria-hidden />
             </>
           )}
         </button>
-        <span className="text-xs text-slate-400 mt-2">
-          Evaluates PostgreSQL rules, XGBoost ranking formula, nearest facilities & cited LCA impact.
-        </span>
+        <p className="text-xs text-slate-500">
+          Based on nearby drop-off points, repair options and estimated environmental impact.
+        </p>
       </div>
     </div>
   );
 };
+
+export default AnalysisResultsSection;

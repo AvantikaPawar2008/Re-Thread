@@ -6,9 +6,9 @@ Handles 'uncertain' material by using benchmark textile blend averages.
 """
 
 from sqlalchemy.orm import Session
-from backend.app.config import settings
-from backend.app.models_db import ImpactFactor
-from backend.app.schemas import ImpactEstimate
+from app.config import settings
+from app.models_db import ImpactFactor
+from app.schemas import ImpactEstimate
 
 
 def calculate_impact(

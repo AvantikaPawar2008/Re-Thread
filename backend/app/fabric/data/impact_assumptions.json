@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "default_garment_weight_kg": 0.30,
+  "max_user_weight_kg": 20.0,
+  "assumptions": [
+    "A 'garment reused' is a project you marked as completed on the dashboard. Analyses and saved ideas are intentions, not outcomes, so they are never counted as reuse.",
+    "Each completed project is assumed to use exactly one garment.",
+    "Fabric diverted is the weight of that garment, as an upper bound: it assumes the whole garment is used and ignores offcuts that may still be discarded.",
+    "If you enter the garment's weight yourself, that figure is used. Otherwise a typical weight for the predicted garment category is assumed (see the catalog). Typical weights are rough author estimates, not measurements.",
+    "The weight of a garment kept out of the bin is not the same as an environmental saving. Reusing a garment avoids waste only to the extent it delays disposal."
+  ],
+  "environmental_factors": {
+    "enabled": false,
+    "status": "not_configured",
+    "explanation": "No verified per-kilogram carbon or water factor for upcycling is configured, so RE-THREAD does not report carbon or water savings. To add one, set 'enabled' to true and provide 'co2e_kg_per_kg', 'water_litres_per_kg', and a 'source' citation that you have checked. Until then the impact page shows only counts and fabric weights.",
+    "co2e_kg_per_kg": null,
+    "water_litres_per_kg": null,
+    "source": null
+  }
+}

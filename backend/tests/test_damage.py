@@ -6,18 +6,18 @@ import numpy as np
 import pytest
 import torch
 
-from backend.app.ml.damage import (
+from app.ml.damage import (
     analyze_damage,
     is_using_stub,
     load_damage_model,
 )
-from backend.app.schemas import DamageAnalysis
+from app.schemas import DamageAnalysis
 
 
 def test_damage_fallback_when_weights_missing():
     """Verify that damage detection falls back to the stub when weights/damage.pt is absent."""
     # Ensure stub mode
-    with patch("backend.app.ml.damage.WEIGHTS_PATH") as mock_path:
+    with patch("app.ml.damage.WEIGHTS_PATH") as mock_path:
         mock_path.exists.return_value = False
         loaded = load_damage_model()
         assert loaded is False
@@ -61,8 +61,8 @@ def test_damage_real_inference_with_mock_yolo():
     Image.new("RGB", (100, 100), color="blue").save(buf, format="JPEG")
     valid_img_bytes = buf.getvalue()
 
-    with patch("backend.app.ml.damage._damage_model", mock_yolo_model):
-        with patch("backend.app.ml.damage._is_stub_mode", False):
+    with patch("app.ml.damage._damage_model", mock_yolo_model):
+        with patch("app.ml.damage._is_stub_mode", False):
             res = analyze_damage([valid_img_bytes])
             assert isinstance(res, DamageAnalysis)
             assert res.detected is True

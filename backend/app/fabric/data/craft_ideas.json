@@ -1,0 +1,374 @@
+{
+  "_about": "Hand-written craft catalog used by the rule-based recommender (backend/app/fabric/recommender.py). Each idea lists the garment categories it suits in 'applies_to' ('any' = suits any soft fabric). Budgets are rough author estimates of EXTRA supplies in INR, assuming you already own scissors, needle and thread; they are not measured prices. Difficulty and times are typical for a first-time maker.",
+  "categories": {
+    "tshirt":   {"display": "T-shirt / jersey top", "synonyms": ["t-shirt", "tshirt", "t shirt", "tee", "jersey", "polo"], "typical_weight_kg": 0.18, "note": "Stretchy jersey knit: cut edges curl instead of fraying."},
+    "shirt":    {"display": "Shirt / blouse / kurta", "synonyms": ["shirt", "blouse", "kurta", "kurti", "top", "button-down"], "typical_weight_kg": 0.25, "note": "Lightweight woven fabric that holds a crisp edge."},
+    "denim":    {"display": "Jeans / denim", "synonyms": ["jeans", "denim", "jean", "denim jacket"], "typical_weight_kg": 0.70, "note": "Heavy, durable twill; needs a denim needle on a sewing machine."},
+    "trousers": {"display": "Trousers / pants", "synonyms": ["trousers", "pants", "chinos", "slacks", "leggings", "joggers", "pyjama", "pajama"], "typical_weight_kg": 0.50, "note": "Medium-weight woven (or stretch) fabric in long panels."},
+    "dress":    {"display": "Dress / skirt", "synonyms": ["dress", "skirt", "gown", "frock", "saree", "sari", "dupatta"], "typical_weight_kg": 0.35, "note": "Often large, continuous pieces of fabric."},
+    "knitwear": {"display": "Sweater / knitwear", "synonyms": ["sweater", "jumper", "cardigan", "knitwear", "knit", "pullover", "hoodie", "sweatshirt"], "typical_weight_kg": 0.45, "note": "Thick knit: cut edges can unravel unless stabilised."},
+    "jacket":   {"display": "Jacket / coat", "synonyms": ["jacket", "coat", "blazer", "windcheater"], "typical_weight_kg": 0.80, "note": "Outer fabric may be coated, lined or padded; check before cutting."},
+    "towel":    {"display": "Towel / terry", "synonyms": ["towel", "terry", "bath towel", "napkin"], "typical_weight_kg": 0.40, "note": "Thick absorbent loops; very forgiving to work with."},
+    "bedsheet": {"display": "Bedsheet / curtain", "synonyms": ["bedsheet", "bed sheet", "sheet", "bedding", "curtain", "pillowcase", "duvet", "quilt cover"], "typical_weight_kg": 0.55, "note": "Large flat panels of light woven fabric."},
+    "scarf":    {"display": "Scarf / stole", "synonyms": ["scarf", "stole", "shawl", "muffler", "bandana"], "typical_weight_kg": 0.12, "note": "Light, often slippery; use fine needles and sharp scissors."}
+  },
+  "ideas": [
+    {
+      "id": "tshirt-tote",
+      "name": "No-sew T-shirt tote bag",
+      "tagline": "Turn a worn tee into a shopping bag in under an hour.",
+      "difficulty": "Easy",
+      "time_minutes": [20, 40],
+      "sewing": "none",
+      "budget_inr": [0, 50],
+      "applies_to": ["tshirt"],
+      "materials": ["1 old T-shirt (not too thin)", "Sharp fabric scissors", "Fabric chalk or a washable pen", "Ruler"],
+      "optional_materials": ["Needle and strong thread (for a sturdier bottom seam)"],
+      "steps": [
+        "Wash and dry the T-shirt, then lay it flat and smooth out the wrinkles.",
+        "Cut off both sleeves just outside the seam, following the curve of the armhole.",
+        "Cut out the neckline in a wide, deep scoop; this becomes the bag opening. The remaining shoulder strips are the handles.",
+        "Turn the shirt inside out. Along the bottom hem, cut vertical fringe about 8 cm long and 2 cm wide through both layers.",
+        "Tie each front fringe strip to its matching back strip in a double knot, working across the bottom to close it.",
+        "Turn the bag right side out, tug the handles to stretch them, and test it with a light load before using."
+      ],
+      "caveat": "Jersey knit stretches under weight. Use for light loads or sew a reinforcing seam across the bottom."
+    },
+    {
+      "id": "tshirt-yarn",
+      "name": "T-shirt yarn for coasters and braids",
+      "tagline": "One continuous strip of stretchy yarn from a single tee.",
+      "difficulty": "Easy",
+      "time_minutes": [45, 90],
+      "sewing": "none",
+      "budget_inr": [0, 30],
+      "applies_to": ["tshirt"],
+      "materials": ["1 jersey T-shirt without side seams if possible", "Scissors", "Ruler"],
+      "optional_materials": ["Crochet hook (8 to 10 mm) to make coasters or a small basket"],
+      "steps": [
+        "Cut off the hem and the top of the shirt (sleeves and neckline) to leave a plain fabric tube.",
+        "Fold the tube in half lengthwise so the fold is at the top and the cut edge is at the bottom.",
+        "Cut across from the fold toward the edge in strips about 2.5 cm wide, stopping about 3 cm before the edge.",
+        "Unfold. Cut diagonally from one strip end to the next across the uncut band to link the loops into one long spiral strip.",
+        "Hold the strip and pull firmly along its length; the edges roll inward and it curls into yarn.",
+        "Wind the yarn into a ball, then crochet, braid or coil it into coasters, a pot mat or a small basket."
+      ],
+      "caveat": null
+    },
+    {
+      "id": "cushion-cover",
+      "name": "Envelope cushion cover",
+      "tagline": "A zip-free cover from a shirt, dress or bedsheet panel.",
+      "difficulty": "Medium",
+      "time_minutes": [60, 120],
+      "sewing": "machine",
+      "budget_inr": [0, 150],
+      "applies_to": ["shirt", "dress", "bedsheet", "denim", "scarf"],
+      "materials": ["Fabric panel big enough for the front plus two back pieces", "A cushion insert", "Matching thread", "Fabric scissors", "Pins"],
+      "optional_materials": ["Buttons or ribbon for decoration"],
+      "steps": [
+        "Measure your cushion insert. Cut one front piece 2 cm larger than the insert on every side (seam allowance).",
+        "Cut two back pieces, each the same height as the front and about two thirds of its width.",
+        "Fold over and stitch a narrow hem along one long edge of each back piece.",
+        "Lay the front face up. Place the back pieces face down on top, hemmed edges overlapping in the middle, outer edges aligned with the front.",
+        "Pin and sew all the way around the outer edge with a 1.5 cm seam allowance.",
+        "Trim the corners diagonally, turn the cover right side out through the opening, push the corners out, press, and insert the cushion."
+      ],
+      "caveat": "Very thin or sheer fabric may show the insert through it; line it with a plain cotton layer."
+    },
+    {
+      "id": "denim-organizer",
+      "name": "Hanging denim pocket organizer",
+      "tagline": "Use jeans' built-in pockets for a desk or wall organizer.",
+      "difficulty": "Medium",
+      "time_minutes": [90, 150],
+      "sewing": "machine",
+      "budget_inr": [0, 120],
+      "applies_to": ["denim", "trousers"],
+      "materials": ["1 pair of jeans or sturdy trousers with pockets", "Scissors", "Pins", "Denim needle and strong thread", "Ruler"],
+      "optional_materials": ["A wooden dowel and cord for hanging", "Iron-on interfacing"],
+      "steps": [
+        "Cut off the legs and the waistband and set them aside; they are useful for other projects.",
+        "Cut out the back or front panel containing the pockets, leaving at least 3 cm of fabric around each pocket.",
+        "Cut a plain backing rectangle from leftover denim, the same size as the pocket panel.",
+        "Pin the pocket panel on the backing, wrong sides together, and trim to a neat rectangle.",
+        "Fold the edges inward by 1 cm twice, pin, and topstitch all the way around to bind both layers; stitch pocket top corners again for strength.",
+        "Fold the top edge over a dowel and stitch to form a hanging sleeve, then attach a cord and hang it."
+      ],
+      "caveat": "Use a denim (jeans) needle; multiple denim layers at seams can break standard needles."
+    },
+    {
+      "id": "denim-pouch",
+      "name": "Jeans-leg zip pouch",
+      "tagline": "A tidy pencil or toiletries pouch from one trouser leg.",
+      "difficulty": "Medium",
+      "time_minutes": [60, 90],
+      "sewing": "machine",
+      "budget_inr": [20, 100],
+      "applies_to": ["denim"],
+      "materials": ["One leg of an old pair of jeans", "A zip about 20 cm long", "Lining fabric (an old cotton shirt works)", "Denim needle and thread", "Scissors, pins"],
+      "optional_materials": [],
+      "steps": [
+        "Cut a section of the leg about 25 cm long and cut it open along the inseam so it lies flat.",
+        "Cut two outer rectangles from the denim and two matching rectangles from the lining.",
+        "Sandwich the zip between an outer piece and a lining piece (right sides together on the zip) and sew along the zip edge; repeat on the other side.",
+        "Open the zip halfway, then place both outer pieces right sides together and both lining pieces right sides together.",
+        "Sew all the way around, leaving a 7 cm gap in the lining bottom.",
+        "Turn the pouch through the gap, close the gap with a small stitch, tuck the lining in, and press."
+      ],
+      "caveat": null
+    },
+    {
+      "id": "fabric-flowers",
+      "name": "Fabric flowers and brooches",
+      "tagline": "Gathered petals that turn scraps into accessories.",
+      "difficulty": "Easy",
+      "time_minutes": [30, 60],
+      "sewing": "hand",
+      "budget_inr": [10, 80],
+      "applies_to": ["any"],
+      "materials": ["Fabric scraps (thin to medium weight works best)", "Needle and thread", "Scissors", "A button or bead for the centre"],
+      "optional_materials": ["Brooch pin or hair clip", "Hot glue or fabric glue"],
+      "steps": [
+        "Cut a long strip of fabric about 6 cm wide and 40 cm long. Fold it in half lengthwise with the right side outward.",
+        "Sew a running stitch close to the open raw edges along the entire length.",
+        "Pull the thread gently to gather the strip into a ruffle, then knot the thread.",
+        "Starting at one end, coil the ruffle around itself, stitching the layers together at the base as you go.",
+        "Sew or glue a button or bead into the centre.",
+        "Attach a pin or clip at the back to make a brooch or hair accessory."
+      ],
+      "caveat": "Use fabric glue sparingly; some glues stain light or thin fabric."
+    },
+    {
+      "id": "patchwork-coasters",
+      "name": "Patchwork coasters",
+      "tagline": "Square scraps pieced into small, washable coasters.",
+      "difficulty": "Medium",
+      "time_minutes": [60, 120],
+      "sewing": "machine",
+      "budget_inr": [0, 100],
+      "applies_to": ["shirt", "dress", "bedsheet", "denim", "trousers", "scarf"],
+      "materials": ["Scrap squares of woven fabric in coordinating colours", "Backing fabric", "Thread", "Rotary cutter or scissors and ruler", "Iron"],
+      "optional_materials": ["Cotton batting for thickness"],
+      "steps": [
+        "Cut 5 cm squares from your scrap fabrics. You need four squares per coaster plus a 12 cm backing square.",
+        "Sew two squares together in a pair with a 1 cm seam, then make a second pair.",
+        "Press the seams open, then join the two pairs to make a 2 by 2 patchwork block; press again.",
+        "Place the patchwork block and the backing right sides together and sew around the edge, leaving a 4 cm gap.",
+        "Trim the corners, turn right side out through the gap, and press flat.",
+        "Topstitch around the edge to close the gap and flatten the coaster."
+      ],
+      "caveat": "These are for decoration and cool drinks only. Do not use them as pot holders unless the care label confirms natural, heat-resistant fibres, because synthetic fabrics can melt."
+    },
+    {
+      "id": "scrunchies",
+      "name": "Hair scrunchies",
+      "tagline": "Soft hair ties from a strip of fabric and some elastic.",
+      "difficulty": "Easy",
+      "time_minutes": [20, 30],
+      "sewing": "hand",
+      "budget_inr": [10, 40],
+      "applies_to": ["tshirt", "shirt", "dress", "scarf", "bedsheet"],
+      "materials": ["A fabric strip about 10 cm by 40 cm", "Elastic about 20 cm long and 6 mm wide", "Needle and thread", "Safety pin"],
+      "optional_materials": [],
+      "steps": [
+        "Fold the fabric strip in half lengthwise, right sides together, and sew along the long edge to make a tube.",
+        "Turn the tube right side out, using the safety pin to feed it through.",
+        "Attach the safety pin to the elastic and thread the elastic through the tube.",
+        "Overlap the elastic ends by 1 cm and sew them together firmly.",
+        "Tuck one raw end of the fabric tube into the other and fold the edge under.",
+        "Hand-stitch the tube ends closed with small, neat stitches."
+      ],
+      "caveat": null
+    },
+    {
+      "id": "knot-headband",
+      "name": "Twisted knot headband",
+      "tagline": "A stretchy headband that needs almost no sewing.",
+      "difficulty": "Easy",
+      "time_minutes": [15, 30],
+      "sewing": "hand",
+      "budget_inr": [0, 20],
+      "applies_to": ["tshirt", "knitwear", "scarf", "shirt"],
+      "materials": ["A fabric strip about 12 cm by 55 cm (cut across a stretchy fabric for the most give)", "Needle and thread", "Scissors"],
+      "optional_materials": [],
+      "steps": [
+        "Fold the strip in half lengthwise with right sides together and sew the long edge closed.",
+        "Turn the tube right side out so the seam is on the inside.",
+        "Wrap the tube around your head to check the fit, then trim it, leaving 1 cm extra.",
+        "Join the two ends right sides together with a short seam to make a loop.",
+        "Twist the loop once into a figure eight, then fold it over itself so the twist sits at the front.",
+        "Press lightly and wear with the twist at the front or top."
+      ],
+      "caveat": "For woven (non-stretch) fabric, cut the strip on the diagonal (bias) so the band has some give."
+    },
+    {
+      "id": "drawstring-pouch",
+      "name": "Drawstring storage pouch",
+      "tagline": "A simple bag for shoes, travel or gift wrapping.",
+      "difficulty": "Easy",
+      "time_minutes": [30, 50],
+      "sewing": "machine",
+      "budget_inr": [0, 60],
+      "applies_to": ["any"],
+      "materials": ["Two rectangles of fabric, each about 25 cm by 30 cm", "A drawstring (ribbon, cord or a strip cut from the same fabric)", "Thread", "Pins and scissors", "Safety pin"],
+      "optional_materials": [],
+      "steps": [
+        "Cut two equal rectangles of fabric. A larger size makes a shoe bag; a smaller one makes a gift pouch.",
+        "Place them right sides together. Sew along both sides and the bottom with a 1 cm seam, leaving the top open.",
+        "Fold the top edge over by 1 cm, then again by 3 cm, forming a channel; stitch close to the folded edge, leaving a small gap to thread the cord.",
+        "Turn the pouch right side out and press the seams.",
+        "Attach the safety pin to the drawstring and feed it through the channel and out again.",
+        "Knot the cord ends, then pull to gather the opening."
+      ],
+      "caveat": null
+    },
+    {
+      "id": "cleaning-cloths",
+      "name": "Reusable cleaning cloths and dusters",
+      "tagline": "The easiest way to extend a garment's life by a few more years.",
+      "difficulty": "Easy",
+      "time_minutes": [15, 30],
+      "sewing": "none",
+      "budget_inr": [0, 0],
+      "applies_to": ["tshirt", "towel", "bedsheet", "knitwear", "shirt"],
+      "materials": ["Soft cotton-type fabric from the garment", "Scissors", "Ruler"],
+      "optional_materials": ["Needle and thread or a zigzag machine stitch to stop fraying"],
+      "steps": [
+        "Wash the garment first so loose dirt and lint do not transfer.",
+        "Cut away seams, zips, buttons and labels because they can scratch surfaces.",
+        "Cut the fabric into squares about 25 to 30 cm wide.",
+        "Optionally stitch around each edge to stop fraying (knits usually do not need it).",
+        "Use one for dusting or polishing, and the rest for general wiping.",
+        "Wash cloths separately from clothes, using a hot wash if the fabric allows."
+      ],
+      "caveat": "Synthetic fabrics shed microfibres when washed. Prefer natural, absorbent fabrics for cloths that will be washed often."
+    },
+    {
+      "id": "braided-pet-toy",
+      "name": "Braided tug toy for dogs",
+      "tagline": "Three knotted strips of fabric make a sturdy chew-and-tug toy.",
+      "difficulty": "Easy",
+      "time_minutes": [20, 30],
+      "sewing": "none",
+      "budget_inr": [0, 0],
+      "applies_to": ["tshirt", "knitwear", "towel"],
+      "materials": ["Fabric (jersey or terry works well)", "Scissors"],
+      "optional_materials": [],
+      "steps": [
+        "Cut three strips of fabric about 5 cm wide and 60 cm long.",
+        "Gather the three strips together at one end and tie them in a tight overhand knot, leaving a short tail.",
+        "Braid the strips snugly down their length.",
+        "Tie another tight knot at the other end and trim the tails.",
+        "Give it a hard tug to test that both knots hold.",
+        "Check the toy before every play session and throw it away when strips fray or loosen."
+      ],
+      "caveat": "Always supervise play. Discard the toy as soon as it frays, since swallowed fibres can be dangerous for pets."
+    },
+    {
+      "id": "jeans-tote",
+      "name": "Jeans tote bag",
+      "tagline": "A strong everyday bag using the legs and waistband of old jeans.",
+      "difficulty": "Advanced",
+      "time_minutes": [180, 300],
+      "sewing": "machine",
+      "budget_inr": [50, 250],
+      "applies_to": ["denim", "trousers"],
+      "materials": ["1 pair of jeans", "Lining fabric (optional but recommended)", "Denim needle and heavy-duty thread", "Scissors, pins, ruler", "Webbing or cut belt loops for handles"],
+      "optional_materials": ["Magnetic snap closure", "Iron-on interfacing"],
+      "steps": [
+        "Cut off the legs at the crotch seam and unpick or cut the inseams so you have two flat panels.",
+        "Cut the front and back bag panels to the same size (about 38 cm wide by 35 cm high), using the waistband as a top edge if you like.",
+        "Make two handles by cutting long strips from the leg hems or sewing webbing, and reinforce the ends.",
+        "Pin the handles to the right side of the bag panels at the top edge.",
+        "Sew the panels right sides together along both sides and the bottom, then box the corners for a flat base.",
+        "Sew the lining the same way, slide it inside the bag, fold the top edges together, and topstitch for a clean finish."
+      ],
+      "caveat": "Stitching through multiple layers of denim and seams needs a strong machine, a denim needle and slow, steady feeding."
+    },
+    {
+      "id": "fabric-basket",
+      "name": "Structured fabric basket",
+      "tagline": "A stiffened storage basket for shelves and desks.",
+      "difficulty": "Advanced",
+      "time_minutes": [120, 180],
+      "sewing": "machine",
+      "budget_inr": [100, 350],
+      "applies_to": ["denim", "jacket", "trousers"],
+      "materials": ["Sturdy fabric (denim, canvas or similar)", "Stiff interfacing or thick felt", "Matching thread", "Scissors, pins, ruler", "Sewing machine with a heavy-duty needle"],
+      "optional_materials": ["Contrast fabric for the lining"],
+      "steps": [
+        "Cut two pieces of outer fabric, two of lining and two of stiff interfacing, each about 30 cm by 22 cm. Cut the base the same way, 20 cm by 20 cm.",
+        "Fuse or baste the interfacing to the wrong side of the outer pieces.",
+        "Sew the outer side panels to form a loop, then attach the base using a 1 cm seam, easing the corners.",
+        "Repeat step 3 for the lining.",
+        "Place the lining inside the outer basket, right sides together, and sew around the top edge, leaving a gap to turn.",
+        "Turn right side out, fold the lining inside, topstitch around the rim, and close the gap."
+      ],
+      "caveat": "Padded, coated or waterproof jacket fabric may not sew or fuse well; test a scrap first."
+    },
+    {
+      "id": "patchwork-throw",
+      "name": "Patchwork throw blanket",
+      "tagline": "A large project that uses lots of old shirts or sheets.",
+      "difficulty": "Advanced",
+      "time_minutes": [480, 960],
+      "sewing": "machine",
+      "budget_inr": [300, 1200],
+      "applies_to": ["shirt", "dress", "bedsheet", "tshirt"],
+      "materials": ["Many pieces of fabric of similar weight", "A backing fabric (old bedsheet works)", "Quilt batting or a thin blanket", "Thread, pins, rotary cutter or scissors, ruler", "Iron"],
+      "optional_materials": ["Quilting clips", "Binding tape"],
+      "steps": [
+        "Wash all fabrics together first so they shrink evenly, and iron them flat.",
+        "Cut equal squares (for example 15 cm) from your fabrics. Stabilise stretchy knits with iron-on interfacing first.",
+        "Lay the squares out in rows and rearrange until the colours balance.",
+        "Sew the squares into rows, then sew the rows together, pressing every seam in alternating directions.",
+        "Layer the backing, batting and patchwork top, then pin or clip them together.",
+        "Quilt through the layers in straight lines, then bind the edge with fabric strips or binding tape."
+      ],
+      "caveat": "Mixing very different fabric weights and stretch makes seams pucker. Group similar fabrics or add interfacing."
+    },
+    {
+      "id": "knit-mittens",
+      "name": "Mittens from a knit sweater",
+      "tagline": "Warm hand covers cut from a worn-out jumper.",
+      "difficulty": "Medium",
+      "time_minutes": [90, 150],
+      "sewing": "machine",
+      "budget_inr": [0, 80],
+      "applies_to": ["knitwear"],
+      "materials": ["An old thick knit sweater", "Paper and pen for a hand template", "Matching thread", "Scissors and pins"],
+      "optional_materials": ["Soft fleece or cotton for lining"],
+      "steps": [
+        "Trace around your hand on paper, leaving 2 cm extra on all sides, then add a thumb shape. Cut it out as your template.",
+        "Use the sweater cuffs as the mitten cuffs so you do not need to hem them.",
+        "Pin the template onto the sweater and cut four mitten shapes (two per hand), cutting through the cuff edge.",
+        "Before sewing, zigzag stitch around the cut edges; cut knit edges can unravel.",
+        "With right sides together, sew each pair around the outline with a stretch or narrow zigzag stitch, leaving the cuff open.",
+        "Turn right side out, trim the seam allowances, and try them on."
+      ],
+      "caveat": "Cut knit edges unravel quickly. Stabilise them with a zigzag stitch before you assemble anything."
+    },
+    {
+      "id": "towel-bath-mat",
+      "name": "Rag bath mat from old towels",
+      "tagline": "A thick, absorbent mat made by braiding or coiling towel strips.",
+      "difficulty": "Medium",
+      "time_minutes": [120, 180],
+      "sewing": "hand",
+      "budget_inr": [30, 200],
+      "applies_to": ["towel"],
+      "materials": ["2 to 3 old towels", "Scissors", "Strong thread and a large needle", "Non-slip rug backing or a rubber shelf liner"],
+      "optional_materials": ["Sewing machine for faster assembly"],
+      "steps": [
+        "Wash the towels, then cut them into strips about 6 cm wide along their length.",
+        "Join strips end to end with a zigzag stitch or strong hand stitching to make very long lengths.",
+        "Braid three strips together, adding more as each runs out, until you have a long braid.",
+        "Starting at the centre, coil the braid into a flat spiral and stitch each round to the one before.",
+        "When the mat reaches the size you want, tuck the loose end under and sew it down.",
+        "Glue or stitch a non-slip backing to the underside before using it on a smooth floor."
+      ],
+      "caveat": "Always use a non-slip backing on tile or wooden floors to prevent slipping."
+    }
+  ]
+}

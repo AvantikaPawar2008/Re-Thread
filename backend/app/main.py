@@ -2,21 +2,24 @@
 
 from contextlib import asynccontextmanager
 import logging
+import time
+
 from fastapi import FastAPI, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from backend.app.api.analyze import router as analyze_router
-from backend.app.api.recommend import router as recommend_router
-from backend.app.api.outcome import router as outcome_router
-from backend.app.config import settings
-from backend.app.db import engine, get_db, Base
-from backend.app.ml.loader import model_registry
-from backend.app.models_db import Facility
-from backend.app.schemas import HealthResponse
-from typing import Any, Dict
-from backend.app.seed.seed_data import seed_all
+from app.api.analyze import router as analyze_router
+from app.api.recommend import router as recommend_router
+from app.api.outcome import router as outcome_router
+
+from app.api.auth import router as auth_router
+from app.config import settings
+from app.db import engine, get_db, Base
+from app.ml.loader import model_registry
+from app.models_db import Facility
+from app.schemas import HealthResponse
+from app.seed.seed_data import seed_all
 
 logger = logging.getLogger("rethread.main")
 logging.basicConfig(level=logging.INFO)
@@ -27,11 +30,11 @@ async def lifespan(app: FastAPI):
     """Lifespan event handler: runs on startup and shutdown."""
     logger.info("Starting up RE-THREAD API...")
 
-    # Ensure database schema is created
+    # Ensure database schema is created (also creates the new users table)
     Base.metadata.create_all(bind=engine)
 
-    # Check if DB has data; if empty, seed default realistic Pune data
-    from backend.app.db import SessionLocal
+    # Seed default Pune data if the database is empty
+    from app.db import SessionLocal
     db = SessionLocal()
     try:
         facility_count = db.query(Facility).count()
@@ -55,8 +58,6 @@ app = FastAPI(
     description="AI-Powered Circular Fashion Decision Platform",
     lifespan=lifespan,
 )
-
-import time
 
 # Configure CORS Middleware
 app.add_middleware(
@@ -106,22 +107,11 @@ def health_check(db: Session = Depends(get_db)) -> HealthResponse:
     )
 
 
-@app.get(
-    "/health/models",
-    response_model=Dict[str, Any],
-    status_code=status.HTTP_200_OK,
-    tags=["System"],
-    summary="Model registry health — which components are active",
-)
-def health_models() -> Dict[str, Any]:
-    """Returns the status of every ML component and the active perception provider."""
-    return model_registry.get_health_detail()
-
-
-# Register API Routers (both root level per docs and /api/v1 prefix)
+# Register API Routers (root level, plus the /api/v1 prefix)
 app.include_router(analyze_router, tags=["Vision & Tag Analysis"])
 app.include_router(recommend_router, tags=["Decision Engine & Recommendation"])
 app.include_router(outcome_router, tags=["Lifecycle Loop & Outcome"])
+app.include_router(auth_router)
 
 app.include_router(analyze_router, prefix=settings.API_V1_STR, tags=["Vision & Tag Analysis (v1)"])
 app.include_router(recommend_router, prefix=settings.API_V1_STR, tags=["Decision Engine & Recommendation (v1)"])
@@ -130,4 +120,4 @@ app.include_router(outcome_router, prefix=settings.API_V1_STR, tags=["Lifecycle 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("backend.app.main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

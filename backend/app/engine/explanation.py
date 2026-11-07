@@ -12,7 +12,7 @@ Gracefully handles edge cases:
 """
 
 from typing import List, Optional
-from backend.app.schemas import AnalyzeResponse, RankedPathway
+from app.schemas import AnalyzeResponse, RankedPathway
 
 
 def generate_explanation(

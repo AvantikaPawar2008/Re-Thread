@@ -8,8 +8,8 @@ import csv
 import logging
 from pathlib import Path
 from sqlalchemy.orm import Session
-from backend.app.db import Base, SessionLocal, engine
-from backend.app.models_db import Brand, Facility, ImpactFactor, PathwayRule
+from app.db import Base, SessionLocal, engine
+from app.models_db import Brand, Facility, ImpactFactor, PathwayRule
 
 logger = logging.getLogger("seed")
 logging.basicConfig(level=logging.INFO)

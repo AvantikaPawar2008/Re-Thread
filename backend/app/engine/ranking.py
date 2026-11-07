@@ -7,7 +7,7 @@ ranker implementation without modifying caller contracts (Non-Negotiable Rule #4
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, NamedTuple, Optional, Tuple
-from backend.app.schemas import AnalyzeResponse
+from app.schemas import AnalyzeResponse
 
 CONDITION_WEIGHTS: Dict[str, float] = {
     "new": 1.0,
@@ -226,12 +226,12 @@ _xgb_ranker = None
 def get_ranker() -> BaseRanker:
     """Return configured ranker implementation (XGBoost or WeightedFormula)."""
     global _xgb_ranker
-    from backend.app.config import settings
+    from app.config import settings
 
     if getattr(settings, "RANKER_TYPE", "formula") == "xgboost":
         if _xgb_ranker is None:
             try:
-                from backend.app.engine.xgb_ranker import XGBoostRanker
+                from app.engine.xgb_ranker import XGBoostRanker
                 _xgb_ranker = XGBoostRanker()
             except Exception:
                 return _formula_ranker

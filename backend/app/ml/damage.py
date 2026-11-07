@@ -12,7 +12,7 @@ from typing import Any, List, Optional
 import numpy as np
 from PIL import Image
 
-from backend.app.schemas import DamageAnalysis, DamageBox
+from app.schemas import DamageAnalysis, DamageBox
 
 logger = logging.getLogger("ml.damage")
 

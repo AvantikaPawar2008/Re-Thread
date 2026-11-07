@@ -7,8 +7,8 @@ which circular pathways are eligible for a given garment.
 from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 
-from backend.app.models_db import Brand, Facility, PathwayRule
-from backend.app.schemas import AnalyzeResponse
+from app.models_db import Brand, Facility, PathwayRule
+from app.schemas import AnalyzeResponse
 
 # Numerical scale to compare condition levels
 CONDITION_HIERARCHY: Dict[str, int] = {

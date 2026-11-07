@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Camera,
   Upload,
   X,
   Sparkles,
   AlertCircle,
-  FileText,
-  Eye,
-  CheckCircle2,
   RefreshCw,
+  RotateCcw,
 } from "lucide-react";
 import { AnalyzeResponse } from "@/types";
 import { analyzeGarment } from "@/lib/api";
@@ -19,151 +17,90 @@ interface UploadSectionProps {
   onAnalysisComplete: (result: AnalyzeResponse, previewImages: { [key: string]: string }) => void;
 }
 
-interface PhotoSlot {
-  id: string;
-  title: string;
-  subtitle: string;
-  required: boolean;
-  file: File | null;
-  previewUrl: string | null;
-}
+const MAX_MB = 10;
+const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
 
 export const UploadSection: React.FC<UploadSectionProps> = ({ onAnalysisComplete }) => {
-  const [slots, setSlots] = useState<{ [key: string]: PhotoSlot }>({
-    front: {
-      id: "front",
-      title: "1. Full Garment",
-      subtitle: "Full front or back view laid flat or hanging",
-      required: true,
-      file: null,
-      previewUrl: null,
-    },
-    texture: {
-      id: "texture",
-      title: "2. Fabric Texture",
-      subtitle: "Close-up macro photo of the textile weave",
-      required: false,
-      file: null,
-      previewUrl: null,
-    },
-    damage: {
-      id: "damage",
-      title: "3. Damage Close-up",
-      subtitle: "Zoomed view of tears, stains, pilling or wear",
-      required: false,
-      file: null,
-      previewUrl: null,
-    },
-    tag: {
-      id: "tag",
-      title: "Care Label (Optional)",
-      subtitle: "Wash care tag showing brand & composition",
-      required: false,
-      file: null,
-      previewUrl: null,
-    },
-  });
-
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileChange = (id: string, file: File | null) => {
+  const pickFile = (f: File | null) => {
     setError(null);
-    if (!file) {
-      setSlots((prev) => ({
-        ...prev,
-        [id]: { ...prev[id], file: null, previewUrl: null },
-      }));
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+    if (!f) {
+      setFile(null);
+      setPreviewUrl(null);
       return;
     }
+    if (!ACCEPTED.includes(f.type)) {
+      setError("Please upload a JPG, PNG or WebP image.");
+      return;
+    }
+    if (f.size > MAX_MB * 1024 * 1024) {
+      setError(`This image is larger than ${MAX_MB} MB. Please choose a smaller one.`);
+      return;
+    }
+    setFile(f);
+    setPreviewUrl(URL.createObjectURL(f));
+  };
 
-    const previewUrl = URL.createObjectURL(file);
-    setSlots((prev) => ({
-      ...prev,
-      [id]: { ...prev[id], file, previewUrl },
-    }));
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    pickFile(e.dataTransfer.files?.[0] ?? null);
   };
 
   const handleLoadSample = () => {
-    setError(null);
-    // Create simulated canvas mock images for quick 1-click testing
-    const createSampleFile = (name: string, color: string, label: string): File => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 400;
-      canvas.height = 400;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.fillStyle = color;
-        ctx.fillRect(0, 0, 400, 400);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 24px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("RE-THREAD SAMPLE", 200, 180);
-        ctx.font = "16px sans-serif";
-        ctx.fillText(label, 200, 220);
-      }
-      const dataUrl = canvas.toDataURL("image/jpeg");
-      const blobBin = atob(dataUrl.split(",")[1]);
-      const array = [];
-      for (let i = 0; i < blobBin.length; i++) {
-        array.push(blobBin.charCodeAt(i));
-      }
-      const blob = new Blob([new Uint8Array(array)], { type: "image/jpeg" });
-      return new File([blob], name, { type: "image/jpeg" });
-    };
-
-    const frontFile = createSampleFile("sample_front.jpg", "#2b4c7e", "Navy Cotton Chino");
-    const textureFile = createSampleFile("sample_texture.jpg", "#386fa4", "Twill Weave 2x1");
-    const damageFile = createSampleFile("sample_damage.jpg", "#59a5d8", "Pocket Seam Tear 2cm");
-    const tagFile = createSampleFile("sample_tag.jpg", "#133c55", "H&M 60% Cotton 40% Poly");
-
-    setSlots({
-      front: { ...slots.front, file: frontFile, previewUrl: URL.createObjectURL(frontFile) },
-      texture: { ...slots.texture, file: textureFile, previewUrl: URL.createObjectURL(textureFile) },
-      damage: { ...slots.damage, file: damageFile, previewUrl: URL.createObjectURL(damageFile) },
-      tag: { ...slots.tag, file: tagFile, previewUrl: URL.createObjectURL(tagFile) },
-    });
+    const canvas = document.createElement("canvas");
+    canvas.width = 600;
+    canvas.height = 600;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "#2b4c7e";
+      ctx.fillRect(0, 0, 600, 600);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 30px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("RE-THREAD SAMPLE", 300, 280);
+      ctx.font = "20px sans-serif";
+      ctx.fillText("Navy Cotton Chino", 300, 325);
+    }
+    canvas.toBlob(
+      (blob) => {
+        if (blob) pickFile(new File([blob], "sample_garment.jpg", { type: "image/jpeg" }));
+      },
+      "image/jpeg",
+      0.92
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!slots.front.file) {
-      setError("Please provide at least the primary garment photo (Full Garment).");
+    if (!file) {
+      setError("Please add a photo of your garment first.");
       return;
     }
-
     setError(null);
     setLoading(true);
 
     try {
-      setLoadingStep("Preprocessing garment photographs...");
+      setLoadingStep("Preprocessing your photo...");
       const formData = new FormData();
+      formData.append("garment_images", file);
 
-      // Collect garment images
-      if (slots.front.file) formData.append("garment_images", slots.front.file);
-      if (slots.texture.file) formData.append("garment_images", slots.texture.file);
-      if (slots.damage.file) formData.append("garment_images", slots.damage.file);
-
-      // Care tag image if provided
-      if (slots.tag.file) {
-        formData.append("tag_image", slots.tag.file);
-      }
-
-      setLoadingStep("Classifying material, wear condition & defect regions...");
+      setLoadingStep("Classifying material, wear condition & defects...");
       const result = await analyzeGarment(formData);
 
-      // Collect preview URLs for display on results view
-      const previews: { [key: string]: string } = {};
-      Object.keys(slots).forEach((key) => {
-        if (slots[key].previewUrl) previews[key] = slots[key].previewUrl!;
-      });
-
       setLoadingStep("Analysis complete!");
-      onAnalysisComplete(result, previews);
+      onAnalysisComplete(result, previewUrl ? { front: previewUrl } : {});
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to analyze garment.";
-      setError(msg);
+      setError(err instanceof Error ? err.message : "Failed to analyze garment.");
     } finally {
       setLoading(false);
       setLoadingStep("");
@@ -171,175 +108,139 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onAnalysisComplete
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* Intro Header */}
-      <div className="text-center mb-8">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 mb-3">
-          <Camera className="w-3.5 h-3.5" />
+    <div className="mx-auto max-w-4xl px-4 py-10">
+      {/* Header */}
+      <div className="mb-8">
+        <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1 text-xs font-semibold text-muted">
+          <Camera className="h-3.5 w-3.5" />
           Circular Garment Scanner
         </span>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-          Photograph Your Garment
+        <h1 className="text-3xl font-extrabold tracking-tight text-charcoal sm:text-4xl">
+          Let&apos;s get to know your garment.
         </h1>
-        <p className="mt-2 text-base text-slate-600 max-w-xl mx-auto">
-          Take multi-angle photos to assess material, wear, and defects. Add the care tag for brand rewards and take-back routing.
+        <p className="mt-2 max-w-xl text-base text-muted">
+          Upload a photo to explore its fabric, condition, and possible next steps.
         </p>
-
-        {/* 1-Click Sample Button for Fast Testing */}
-        <div className="mt-4 flex items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={handleLoadSample}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors border border-slate-200 shadow-2xs"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            Load Sample Garment (Demo)
-          </button>
-        </div>
       </div>
 
-      {/* Error Banner */}
+      {/* Error */}
       {error && (
-        <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-800 text-sm">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-semibold">Analysis Error: </span>
-            {error}
-          </div>
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
+          <div>{error}</div>
         </div>
       )}
 
-      {/* Photo Slots Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {Object.values(slots).map((slot) => {
-            const isTagSlot = slot.id === "tag";
-            return (
-              <div
-                key={slot.id}
-                className={`relative rounded-2xl border-2 transition-all p-4 ${
-                  slot.file
-                    ? "border-emerald-500 bg-emerald-50/20"
-                    : isTagSlot
-                    ? "border-dashed border-slate-300 bg-slate-50/60 hover:border-slate-400"
-                    : slot.required
-                    ? "border-dashed border-emerald-300 bg-emerald-50/10 hover:border-emerald-400"
-                    : "border-dashed border-slate-300 bg-slate-50/40 hover:border-slate-400"
-                }`}
-              >
-                {/* Header of Slot */}
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-slate-800">
-                        {slot.title}
-                      </span>
-                      {slot.required ? (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase">
-                          Required
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 uppercase">
-                          Optional
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 mt-0.5">{slot.subtitle}</p>
-                  </div>
-                  {slot.file && (
-                    <button
-                      type="button"
-                      onClick={() => handleFileChange(slot.id, null)}
-                      className="p-1 rounded-full bg-slate-200 hover:bg-rose-100 hover:text-rose-600 text-slate-600 transition-colors"
-                      title="Remove photo"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+      <form onSubmit={handleSubmit}>
+        <div className="rounded-3xl border border-line bg-white p-4 shadow-soft sm:p-6">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              pickFile(e.target.files?.[0] ?? null);
+              e.target.value = "";
+            }}
+          />
 
-                {/* Slot Body: Preview or Upload Control */}
-                {slot.previewUrl ? (
-                  <div className="relative rounded-xl overflow-hidden aspect-4/3 bg-slate-900 border border-slate-200">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={slot.previewUrl}
-                      alt={slot.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-[11px] text-white font-medium flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      Attached
-                    </div>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center aspect-4/3 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 cursor-pointer transition-colors p-4 text-center group">
-                    <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                      {isTagSlot ? (
-                        <FileText className="w-6 h-6" />
-                      ) : (
-                        <Upload className="w-6 h-6" />
-                      )}
-                    </div>
-                    <span className="text-xs font-semibold text-slate-700">
-                      Tap or drag photo here
-                    </span>
-                    <span className="text-[11px] text-slate-400 mt-1">
-                      JPEG, PNG or WebP up to 10MB
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        handleFileChange(slot.id, file);
-                      }}
-                    />
-                  </label>
-                )}
+          {previewUrl ? (
+            /* Preview state */
+            <div className="relative overflow-hidden rounded-2xl border border-line bg-mist">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewUrl}
+                alt="Your garment"
+                className="mx-auto max-h-[460px] w-full object-contain"
+              />
+              <div className="absolute right-3 top-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-charcoal shadow-sm backdrop-blur hover:bg-white"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Change
+                </button>
+                <button
+                  type="button"
+                  onClick={() => pickFile(null)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-charcoal shadow-sm backdrop-blur hover:bg-white hover:text-rose-600"
+                  title="Remove photo"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          ) : (
+            /* Empty drop zone */
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragging(true);
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+              className={`flex min-h-[360px] flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
+                dragging ? "border-forest bg-brand-50" : "border-line bg-white"
+              }`}
+            >
+              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-mist text-forest">
+                <Upload className="h-6 w-6" />
+              </div>
+              <h2 className="text-2xl font-medium text-charcoal">Drop your garment photo here</h2>
+              <p className="mt-1 text-sm text-muted">or browse files from your device.</p>
 
-        {/* Informative Guidance Banner */}
-        <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-800 flex items-start gap-2.5">
-          <Eye className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          <p>
-            <strong className="font-semibold">Vision First Architecture: </strong>
-            Our AI uses the photos as the primary source for fabric material and condition. The care tag acts as a cross-check and unlocks brand take-back vouchers. If the tag is faded or missing, the analysis proceeds seamlessly!
-          </p>
-        </div>
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-forest px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-evergreen"
+              >
+                <Camera className="h-4 w-4" />
+                Choose Photo
+              </button>
 
-        {/* Submit Button */}
-        <div className="flex flex-col items-center gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={loading || !slots.front.file}
-            className={`w-full sm:w-auto min-w-[280px] px-8 py-3.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 ${
-              loading || !slots.front.file
-                ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-                : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 hover:scale-[1.01]"
-            }`}
-          >
-            {loading ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>{loadingStep || "Analyzing Garment..."}</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                <span>Run Garment AI Analysis</span>
-              </>
-            )}
-          </button>
-          {!slots.front.file && (
-            <span className="text-xs text-slate-400 font-medium">
-              Please attach at least the primary garment photo to proceed.
-            </span>
+              <p className="mt-5 text-xs text-muted">JPG, PNG or WebP · up to {MAX_MB} MB</p>
+              <p className="mt-1 max-w-sm text-xs text-muted">
+                For the best result, use a clear, well-lit photo of the whole garment laid flat.
+              </p>
+            </div>
           )}
+
+          {/* Actions */}
+          <div className="mt-5 flex flex-col items-center gap-3">
+            <button
+              type="submit"
+              disabled={loading || !file}
+              className={`flex min-w-[260px] items-center justify-center gap-2 rounded-full px-8 py-3.5 text-sm font-bold transition-all ${
+                loading || !file
+                  ? "cursor-not-allowed bg-mist text-ghost"
+                  : "bg-forest text-white shadow-md hover:bg-evergreen"
+              }`}
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <span>{loadingStep || "Analyzing garment..."}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  <span>Analyze Garment</span>
+                </>
+              )}
+            </button>
+
+            {!file && !loading && (
+              <button
+                type="button"
+                onClick={handleLoadSample}
+                className="text-xs font-medium text-muted underline-offset-4 hover:text-charcoal hover:underline"
+              >
+                No photo handy? Try a sample garment (demo)
+              </button>
+            )}
+          </div>
         </div>
       </form>
     </div>

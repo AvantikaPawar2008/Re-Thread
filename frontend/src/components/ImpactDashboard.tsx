@@ -2,301 +2,346 @@
 
 import React from "react";
 import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
   Droplets,
+  Info,
   Leaf,
   Recycle,
+  Repeat,
   Sparkles,
-  Award,
-  ArrowUpRight,
-  ShieldCheck,
-  CheckCircle2,
-  Gift,
-  Building,
 } from "lucide-react";
 
-export const ImpactDashboard: React.FC = () => {
+export type ImpactMetric = {
+  id: string;
+  label: string;
+  value: number;
+  unit: string;
+  equivalent?: string;
+  share?: number; // 0–1, portion of total impact
+  confidence?: "high" | "medium" | "low";
+};
+
+export type ComparisonRow = {
+  label: string;
+  value: number; // kg CO₂e per garment
+  highlight?: boolean;
+};
+
+export type LifeStage = {
+  year: string;
+  title: string;
+  detail: string;
+};
+
+export type ImpactDashboardProps = {
+  summary: string;
+  metrics: ImpactMetric[];
+  methodologyNote?: string;
+  nextActionLabel?: string;
+  onNextAction?: () => void;
+  comparison?: ComparisonRow[];
+  timeline?: LifeStage[];
+  assumptions?: { label: string; value: string }[];
+  actions?: { title: string; detail: string }[];
+};
+
+const nf = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 1 });
+
+const CONFIDENCE: Record<NonNullable<ImpactMetric["confidence"]>, { text: string; className: string }> = {
+  high: { text: "High confidence", className: "bg-emerald-50 text-emerald-800 ring-emerald-200" },
+  medium: { text: "Estimate", className: "bg-[#e6f2fb] text-[#174e7c] ring-[#b9d9ef]" },
+  low: { text: "Rough estimate", className: "bg-amber-50 text-amber-800 ring-amber-200" },
+};
+
+const ICONS: Record<string, React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>> = {
+  water: Droplets,
+  carbon: Leaf,
+  waste: Recycle,
+};
+
+const SEGMENT_COLOURS = ["bg-[#7fb8e0]", "bg-[#1d5c8c]", "bg-[#0b2a44]", "bg-[#c9e2f3]"];
+
+const DEFAULT_COMPARISON: ComparisonRow[] = [
+  { label: "Buying a new cotton tee", value: 6.5 },
+  { label: "Keeping it one extra year", value: 1.8, highlight: true },
+  { label: "Recycling into fibre", value: 2.4 },
+];
+
+const DEFAULT_TIMELINE: LifeStage[] = [
+  { year: "Now", title: "Still wearable", detail: "The fabric is intact. A repaired seam or button can extend its life." },
+  { year: "Year 1", title: "Keep it in use", detail: "Each extra year of wear spreads its production impact across more uses." },
+  { year: "Year 2+", title: "Pass it on", detail: "Resell, swap or donate once it no longer fits your routine." },
+];
+
+const DEFAULT_ASSUMPTIONS = [
+  { label: "Average garment mass", value: "180 g cotton" },
+  { label: "Water per cotton tee", value: "About 2,700 L" },
+  { label: "Data source", value: "Average industry figures" },
+];
+
+const DEFAULT_ACTIONS = [
+  { title: "Repair first", detail: "Fix a loose seam or missing button before deciding to discard." },
+  { title: "Resell or swap", detail: "Check local resale or swap groups for items you no longer wear." },
+  { title: "Donate responsibly", detail: "Choose a partner that accepts wearable garments." },
+];
+
+export function ImpactDashboard({
+  summary,
+  metrics,
+  methodologyNote,
+  nextActionLabel = "See what to do with this garment",
+  onNextAction,
+  comparison = DEFAULT_COMPARISON,
+  timeline = DEFAULT_TIMELINE,
+  assumptions = DEFAULT_ASSUMPTIONS,
+  actions = DEFAULT_ACTIONS,
+}: ImpactDashboardProps) {
+  const shared = metrics.filter((m) => typeof m.share === "number");
+  const maxCompare = Math.max(...comparison.map((c) => c.value), 1);
+  const headline = splitHeadline(summary);
+  const heroStats = metrics.slice(0, 3);
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* Title & Tagline */}
-      <div className="mb-8">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 mb-2">
-          <Recycle className="w-3.5 h-3.5 text-emerald-600" />
-          Circular Impact Dashboard
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-          Your Circular Fashion Journey
-        </h1>
-        <p className="text-sm text-slate-500 mt-1 font-medium">
-          &ldquo;Your Clothes. Your Stories. Their Next Chapter.&rdquo;
-        </p>
-      </div>
-
-      {/* Top 4 KPI Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Garments Diverted</span>
-            <span className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
-              <Recycle className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="text-3xl font-extrabold text-slate-900">42</div>
-          <div className="flex items-center gap-1 text-xs text-emerald-700 font-semibold mt-1">
-            <ArrowUpRight className="w-3.5 h-3.5" />
-            <span>+12 this month</span>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Water Conserved</span>
-            <span className="p-2 rounded-xl bg-cyan-50 text-cyan-600">
-              <Droplets className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="text-3xl font-extrabold text-slate-900">114,200 L</div>
-          <div className="text-xs text-slate-500 mt-1">
-            Equal to ~1,420 household showers
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Carbon Avoided</span>
-            <span className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
-              <Leaf className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="text-3xl font-extrabold text-slate-900">890 kg CO₂</div>
-          <div className="text-xs text-slate-500 mt-1">
-            Equal to driving ~3,600 km in a car
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Confirmed Intake</span>
-            <span className="p-2 rounded-xl bg-purple-50 text-purple-600">
-              <ShieldCheck className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="text-3xl font-extrabold text-slate-900">90.5%</div>
-          <div className="text-xs text-purple-700 font-semibold mt-1">
-            38/42 QR-confirmed outcomes
-          </div>
-        </div>
-      </div>
-
-      {/* Pathways Distribution & Active Brand Rewards */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
-        {/* Pathway Breakdown */}
-        <div className="lg:col-span-7 rounded-3xl border border-slate-200 bg-white p-6 shadow-xs">
-          <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-600" />
-            Lifetime Pathway Breakdown
-          </h2>
-
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                <span>Repaired & Restored</span>
-                <span>16 items (38%)</span>
-              </div>
-              <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full bg-amber-500" style={{ width: "38%" }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                <span>Donated to Community (Goonj & Goodwill)</span>
-                <span>12 items (29%)</span>
-              </div>
-              <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full bg-blue-500" style={{ width: "29%" }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                <span>Brand Take-Back (Vouchers Earned)</span>
-                <span>8 items (19%)</span>
-              </div>
-              <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full bg-purple-500" style={{ width: "19%" }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                <span>Industrial Fiber Recycled (Swach Pune)</span>
-                <span>6 items (14%)</span>
-              </div>
-              <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full bg-emerald-600" style={{ width: "14%" }} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Brand Rewards Wallet */}
-        <div className="lg:col-span-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
+    <div className="mx-auto max-w-6xl space-y-10 px-5 py-10 text-slate-900">
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#0b2a44] via-[#1d5c8c] to-[#2f7ab0] p-8 text-white shadow-xl md:p-12">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] [background-size:28px_28px]"
+          aria-hidden
+        />
+        <div className="relative grid gap-10 lg:grid-cols-[1.25fr_1fr] lg:items-end">
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Gift className="w-4 h-4 text-purple-600" />
-                Brand Rewards Wallet
-              </h2>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
-                2 Active
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
-                <div className="flex items-center justify-between font-bold text-xs text-purple-900 mb-1">
-                  <span>H&M Phoenix Marketcity</span>
-                  <span className="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">15% OFF</span>
-                </div>
-                <p className="text-[11px] text-purple-700">
-                  Earned via QR intake scan on unwanted denim jacket. Valid until Dec 2026.
-                </p>
-                <div className="mt-2 font-mono text-[10px] text-purple-900 bg-white/70 px-2 py-1 rounded w-fit">
-                  CODE: HM-RETHREAD-928A
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200">
-                <div className="flex items-center justify-between font-bold text-xs text-blue-900 mb-1">
-                  <span>Levi&apos;s Pavillion Store</span>
-                  <span className="text-blue-700 bg-blue-100 px-2 py-0.5 rounded">Free Repair</span>
-                </div>
-                <p className="text-[11px] text-blue-700">
-                  Customization or hem repair credit at The Pavillion Tailor Shop.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-[11px] text-slate-400 mt-4">
-            Coupons are generated exclusively through verified drop-off QR scans.
-          </p>
-        </div>
-      </div>
-
-      {/* Pune City Circular Network Activity & Ward Distribution */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs">
-          <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <Building className="w-4 h-4 text-emerald-600" />
-            Pune Municipal Ward Progress (PMC & PCMC)
-          </h2>
-          <div className="space-y-3">
-            {[
-              { ward: "FC Road / Shivajinagar", collected: "4,120 kg", rate: "92% diverted" },
-              { ward: "Kothrud & Karve Nagar", collected: "3,890 kg", rate: "88% diverted" },
-              { ward: "Camp & MG Road", collected: "2,940 kg", rate: "85% diverted" },
-              { ward: "Viman Nagar & Kalyani Nagar", collected: "3,150 kg", rate: "91% diverted" },
-              { ward: "Hadapsar & Magarpatta", collected: "2,420 kg", rate: "84% diverted" },
-              { ward: "Pimpri-Chinchwad (PCMC)", collected: "4,680 kg", rate: "89% diverted" },
-            ].map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between text-xs py-1.5 border-b border-slate-50">
-                <span className="font-semibold text-slate-700">{item.ward}</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-slate-500 font-mono">{item.collected}</span>
-                  <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full text-[11px]">
-                    {item.rate}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Municipal Zero-Waste Mission Target */}
-        <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 to-teal-950 text-white p-6 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
-              <Award className="w-4 h-4" />
-              <span>Municipal Circular Mission</span>
-            </div>
-            <h3 className="text-xl font-black text-white mb-2">
-              Zero-Textile-Waste Initiative
-            </h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Targeting 15,000 metric tons of unwanted post-consumer garments diverted from Urali Devachi landfills by combining edge computer vision diagnostics, automated fiber OCR, and localized Pune municipal repair cooperatives.
+            <p className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.22em] text-[#bdd9ee]">
+              <span className="h-px w-10 bg-[#bdd9ee]" aria-hidden />
+              Your impact
             </p>
+            <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight md:text-5xl">
+              {headline.lead} <em className="not-italic text-[#b6d9f0]">{headline.accent}</em>
+            </h1>
+            {onNextAction && (
+              <button
+                type="button"
+                onClick={onNextAction}
+                className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#0b2a44] transition-colors hover:bg-[#e6f2fb] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-white"
+              >
+                {nextActionLabel}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </button>
+            )}
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-800">
-            <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1.5">
-              <span>City Milestone Progress</span>
-              <span className="text-emerald-400 font-bold">68.4% Achieved</span>
-            </div>
-            <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-              <div className="h-full rounded-full bg-emerald-400" style={{ width: "68.4%" }} />
-            </div>
-          </div>
+          <ul className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            {heroStats.map((m) => {
+              const Icon = ICONS[m.id] ?? Info;
+              return (
+                <li
+                  key={m.id}
+                  className="flex items-center gap-4 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
+                    <Icon className="h-5 w-5" aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-2xl font-extrabold tracking-tight">
+                      {nf.format(m.value)}
+                      <span className="ml-1 text-sm font-semibold text-[#cfe0ee]">{m.unit}</span>
+                    </p>
+                    <p className="truncate text-xs text-[#cfe0ee]">{m.label}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </div>
-      </div>
+      </section>
 
-      {/* Recent QR Confirmed Activity Feed */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs">
-        <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          Recent Verified Drop-Offs (Pune Network)
+      {/* Metric cards */}
+      <section aria-labelledby="impact-metrics" className="space-y-4">
+        <h2 id="impact-metrics" className="sr-only">
+          Impact figures
         </h2>
+        <ul className="grid gap-5 md:grid-cols-3">
+          {metrics.map((m) => {
+            const Icon = ICONS[m.id] ?? Info;
+            const conf = m.confidence ? CONFIDENCE[m.confidence] : null;
+            return (
+              <li
+                key={m.id}
+                className="flex flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e6f2fb] text-[#1d5c8c]">
+                    <Icon className="h-5 w-5" aria-hidden />
+                  </span>
+                  {conf && (
+                    <span className={`rounded-full px-3 py-1 text-[11px] font-bold ring-1 ring-inset ${conf.className}`}>
+                      {conf.text}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-6 text-sm font-semibold text-slate-500">{m.label}</p>
+                <p className="mt-1 text-4xl font-extrabold tracking-tight">
+                  {nf.format(m.value)}
+                  <span className="ml-1.5 text-base font-semibold text-slate-500">{m.unit}</span>
+                </p>
+                {m.equivalent && (
+                  <p className="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-600">{m.equivalent}</p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
-        <div className="divide-y divide-slate-100">
-          <div className="py-3 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
-                RP
-              </div>
-              <div>
-                <p className="font-bold text-slate-800">Navy Cotton Chino Trousers</p>
-                <p className="text-slate-500">FC Road Master Tailors & Alterations · Confirmed Repair</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="text-emerald-700 font-semibold">+3,100 L water</span>
-              <p className="text-slate-400 text-[10px]">Today, 4:15 PM</p>
-            </div>
-          </div>
+      {/* Breakdown and comparison */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        {shared.length > 0 && (
+          <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+            <h2 className="text-xl font-extrabold tracking-tight">Where the impact comes from</h2>
+            <p className="mt-1 text-sm text-slate-500">Share of this garment's total estimated impact.</p>
 
-          <div className="py-3 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
-                DN
-              </div>
-              <div>
-                <p className="font-bold text-slate-800">Embroidered Cotton Kurta</p>
-                <p className="text-slate-500">Goonj Dropping Centre (Kothrud) · Confirmed Donation</p>
-              </div>
+            <div
+              className="mt-6 flex h-4 gap-1 overflow-hidden rounded-full"
+              role="img"
+              aria-label={shared.map((m) => `${m.label} ${Math.round((m.share ?? 0) * 100)}%`).join(", ")}
+            >
+              {shared.map((m, i) => (
+                <span
+                  key={m.id}
+                  className={`${SEGMENT_COLOURS[i % SEGMENT_COLOURS.length]} rounded-full`}
+                  style={{ flexGrow: m.share, flexBasis: 0 }}
+                />
+              ))}
             </div>
-            <div className="text-right">
-              <span className="text-emerald-700 font-semibold">+3,900 L water</span>
-              <p className="text-slate-400 text-[10px]">Yesterday</p>
-            </div>
-          </div>
 
-          <div className="py-3 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-                TB
-              </div>
-              <div>
-                <p className="font-bold text-slate-800">Fleece Sportswear Jacket</p>
-                <p className="text-slate-500">Decathlon Sports Gear Takeback (Amanora) · Brand Store</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="text-emerald-700 font-semibold">+875 L water</span>
-              <p className="text-slate-400 text-[10px]">3 days ago</p>
-            </div>
+            <ul className="mt-6 space-y-3">
+              {shared.map((m, i) => (
+                <li key={m.id} className="flex items-center justify-between gap-4 text-sm">
+                  <span className="flex items-center gap-2.5 text-slate-700">
+                    <span className={`h-3 w-3 rounded-full ${SEGMENT_COLOURS[i % SEGMENT_COLOURS.length]}`} aria-hidden />
+                    {m.label}
+                  </span>
+                  <span className="font-bold">{Math.round((m.share ?? 0) * 100)}%</span>
+                </li>
+              ))}
+            </ul>
           </div>
+        )}
+
+        <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+          <h2 className="text-xl font-extrabold tracking-tight">Compared to other choices</h2>
+          <p className="mt-1 text-sm text-slate-500">Estimated carbon per garment, in kg CO₂e.</p>
+
+          <ul className="mt-6 space-y-5">
+            {comparison.map((row) => (
+              <li key={row.label}>
+                <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                  <span className={row.highlight ? "font-bold text-[#0b2a44]" : "text-slate-700"}>{row.label}</span>
+                  <span className="font-bold">{nf.format(row.value)} kg</span>
+                </div>
+                <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${
+                      row.highlight ? "bg-[#1d5c8c]" : "bg-slate-300"
+                    }`}
+                    style={{ width: `${(row.value / maxCompare) * 100}%` }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
-      </div>
+      </section>
+
+      {/* Timeline */}
+      <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-9">
+        <h2 className="flex items-center gap-2 text-xl font-extrabold tracking-tight">
+          <Clock className="h-5 w-5 text-[#1d5c8c]" aria-hidden />
+          What happens next
+        </h2>
+        <ol className="mt-8 grid gap-8 md:grid-cols-3">
+          {timeline.map((s, i) => (
+            <li key={s.year + s.title} className="relative">
+              {i < timeline.length - 1 && (
+                <span
+                  className="absolute left-5 top-5 hidden h-px w-[calc(100%-2.5rem)] bg-[#b9d9ef] md:block"
+                  aria-hidden
+                />
+              )}
+              <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#0b2a44] text-sm font-extrabold text-white">
+                {i + 1}
+              </span>
+              <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#1d5c8c]">{s.year}</p>
+              <p className="mt-1 text-lg font-bold">{s.title}</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{s.detail}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* Actions */}
+      <section aria-labelledby="impact-actions" className="space-y-4">
+        <h2 id="impact-actions" className="text-xl font-extrabold tracking-tight">
+          Ways to keep it in use
+        </h2>
+        <ul className="grid gap-4 md:grid-cols-3">
+          {actions.map((a) => (
+            <li
+              key={a.title}
+              className="group rounded-3xl border border-slate-200 bg-white p-6 transition-all hover:-translate-y-0.5 hover:border-[#9fc6e4] hover:shadow-md"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e6f2fb] text-[#1d5c8c]">
+                <CheckCircle2 className="h-4.5 w-4.5" aria-hidden />
+              </span>
+              <p className="mt-4 font-bold">{a.title}</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{a.detail}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Methodology */}
+      <section className="rounded-3xl border border-slate-200 bg-white">
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-3xl px-7 py-5 font-bold marker:hidden">
+            <span className="flex items-center gap-3">
+              <Repeat className="h-4 w-4 text-[#1d5c8c]" aria-hidden />
+              How these numbers were calculated
+            </span>
+            <ChevronDown className="h-4 w-4 text-slate-500 transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
+          <div className="space-y-5 border-t border-slate-100 px-7 pb-7 pt-5">
+            <dl className="grid gap-3 sm:grid-cols-3">
+              {assumptions.map((a) => (
+                <div key={a.label} className="rounded-2xl bg-[#f5f8fb] p-4">
+                  <dt className="text-xs font-semibold text-slate-500">{a.label}</dt>
+                  <dd className="mt-1 text-sm font-bold">{a.value}</dd>
+                </div>
+              ))}
+            </dl>
+            {methodologyNote && (
+              <p className="flex gap-3 text-sm leading-relaxed text-slate-600">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#1d5c8c]" aria-hidden />
+                {methodologyNote}
+              </p>
+            )}
+          </div>
+        </details>
+      </section>
     </div>
   );
-};
+}
+
+function splitHeadline(text: string) {
+  const words = text.trim().split(/\s+/);
+  const accentCount = Math.min(3, Math.max(1, words.length - 1));
+  return {
+    lead: words.slice(0, words.length - accentCount).join(" "),
+    accent: words.slice(words.length - accentCount).join(" "),
+  };
+}
+
+export default ImpactDashboard;

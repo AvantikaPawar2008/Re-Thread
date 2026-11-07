@@ -10,7 +10,7 @@ import re
 from typing import Dict, List, Optional, Set, Tuple
 from rapidfuzz import process, fuzz
 
-from backend.app.schemas import CompositionStatus, MaterialLabel, TagAnalysis
+from app.schemas import CompositionStatus, MaterialLabel, TagAnalysis
 
 logger = logging.getLogger("ml.tag.parse")
 

@@ -23,8 +23,8 @@ from ml.train_resnet18_classifier import (
     remap_imagefolder_classes,
     compute_class_weights,
 )
-import backend.app.ml.condition as condition_mod
-import backend.app.ml.material as material_mod
+import app.ml.condition as condition_mod
+import app.ml.material as material_mod
 
 
 def _create_dummy_image(path: Path):

@@ -13,9 +13,9 @@ from fastapi.testclient import TestClient
 from PIL import Image
 import pytest
 
-from backend.app.config import settings
-from backend.app.engine.ranking import WeightedFormulaRanker
-from backend.app.engine.xgb_ranker import XGBoostRanker
+from app.config import settings
+from app.engine.ranking import WeightedFormulaRanker
+from app.engine.xgb_ranker import XGBoostRanker
 
 
 def create_dummy_jpeg(color: tuple = (100, 150, 200)) -> bytes:
@@ -109,7 +109,7 @@ def test_latency_performance_checks(client: TestClient):
     assert t_health < 150.0
 
     # 2. Recommendation decision engine latency < 350ms
-    from backend.app.schemas import AnalyzeResponse, MaterialAnalysis, ConditionAnalysis, DamageAnalysis, TagAnalysis
+    from app.schemas import AnalyzeResponse, MaterialAnalysis, ConditionAnalysis, DamageAnalysis, TagAnalysis
 
     mock_analysis = AnalyzeResponse(
         material=MaterialAnalysis(label="natural", confidence=0.85),
@@ -136,7 +136,7 @@ def test_latency_performance_checks(client: TestClient):
 
 def test_ranker_interface_implementations(client: TestClient):
     """Test both Formula and XGBoost ranker implementations produce valid output."""
-    from backend.app.schemas import AnalyzeResponse, MaterialAnalysis, ConditionAnalysis, DamageAnalysis, TagAnalysis
+    from app.schemas import AnalyzeResponse, MaterialAnalysis, ConditionAnalysis, DamageAnalysis, TagAnalysis
 
     mock_analysis = AnalyzeResponse(
         material=MaterialAnalysis(label="blend", confidence=0.75),

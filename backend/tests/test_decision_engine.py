@@ -9,13 +9,13 @@ Tests cover:
 6. QR generation and intake confirmation
 """
 
-from backend.app.engine.explanation import generate_explanation
-from backend.app.engine.geography import find_nearest_partner
-from backend.app.engine.impact import calculate_impact
-from backend.app.engine.qr import generate_qr_base64, generate_qr_id
-from backend.app.engine.ranking import WeightedFormulaRanker, rank_pathways
-from backend.app.engine.rules import check_brand_takeback_eligibility, evaluate_eligibility
-from backend.app.schemas import (
+from app.engine.explanation import generate_explanation
+from app.engine.geography import find_nearest_partner
+from app.engine.impact import calculate_impact
+from app.engine.qr import generate_qr_base64, generate_qr_id
+from app.engine.ranking import WeightedFormulaRanker, rank_pathways
+from app.engine.rules import check_brand_takeback_eligibility, evaluate_eligibility
+from app.schemas import (
     AnalyzeResponse,
     ConditionAnalysis,
     DamageAnalysis,

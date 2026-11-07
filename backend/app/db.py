@@ -2,7 +2,7 @@
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-from backend.app.config import settings
+from app.config import settings
 
 # If using SQLite, check_same_thread=False is needed for multi-threaded requests
 connect_args = {}

@@ -13,8 +13,8 @@ import numpy as np
 import shap
 import xgboost as xgb
 
-from backend.app.schemas import AnalyzeResponse
-from backend.app.engine.ranking import BaseRanker, RankedScore, CONDITION_WEIGHTS, MATERIAL_WEIGHTS
+from app.schemas import AnalyzeResponse
+from app.engine.ranking import BaseRanker, RankedScore, CONDITION_WEIGHTS, MATERIAL_WEIGHTS
 
 logger = logging.getLogger("engine.xgb_ranker")
 

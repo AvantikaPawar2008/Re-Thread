@@ -19,9 +19,10 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
-from backend.app.db import Base
+from app.db import Base
 
 
 def utc_now():
@@ -113,3 +114,69 @@ class Outcome(Base):
 
     recommendation = relationship("Recommendation", back_populates="outcomes")
     facility = relationship("Facility", back_populates="outcomes")
+
+
+# ---------------------------------------------------------------------------
+# Fabric upcycling workflow (guest-session scoped)
+#
+# ``owner_hash`` is an HMAC of the browser's guest token, never the token
+# itself. Every query for user data MUST filter on it so one guest can never
+# read another guest's records.
+# ---------------------------------------------------------------------------
+class FabricAnalysis(Base):
+    __tablename__ = "fabric_analyses"
+
+    id = Column(String(36), primary_key=True)  # uuid4
+    owner_hash = Column(String(64), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    # File name only (random, server generated), relative to UPLOAD_DIR / owner dir.
+    image_filename = Column(String(80), nullable=False)
+    image_sha256 = Column(String(64), nullable=False)
+    image_width = Column(Integer, nullable=False)
+    image_height = Column(Integer, nullable=False)
+    # JSON snapshots of exactly what the models returned.
+    predictions_json = Column(Text, nullable=False)
+    decision_json = Column(Text, nullable=False)
+    decision_status = Column(String(32), nullable=False)
+    final_label = Column(String(80), nullable=True)
+
+
+class SavedIdea(Base):
+    __tablename__ = "saved_ideas"
+    __table_args__ = (
+        UniqueConstraint("owner_hash", "analysis_id", "idea_id", name="uq_saved_owner_analysis_idea"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_hash = Column(String(64), nullable=False, index=True)
+    analysis_id = Column(String(36), ForeignKey("fabric_analyses.id"), nullable=True, index=True)
+    idea_id = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class CompletedProject(Base):
+    __tablename__ = "completed_projects"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_hash = Column(String(64), nullable=False, index=True)
+    # Kept (set to NULL) when the source analysis is deleted, so history survives.
+    analysis_id = Column(String(36), ForeignKey("fabric_analyses.id"), nullable=True, index=True)
+    idea_id = Column(String(64), nullable=False)
+    completed_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    notes = Column(String(500), nullable=True)
+    # Snapshot at completion time so later changes to assumptions do not rewrite history.
+    weight_kg = Column(Float, nullable=False)
+    weight_source = Column(String(24), nullable=False)  # user | assumed_category | assumed_default
+    
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    full_name = Column(String(120), nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    city = Column(String(80), default="Pune", nullable=False)
+    bio = Column(Text, default="", nullable=False)
+    interests = Column(String(255), default="", nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
