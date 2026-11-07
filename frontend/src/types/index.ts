@@ -47,6 +47,10 @@ export interface AnalyzeResponse {
   damage: DamageAnalysis;
   tag: TagAnalysis;
   composition_status: CompositionStatus;
+  /** "vlm" | "local" | "stub" — perception source */
+  source?: string | null;
+  /** Per-field one-sentence reasoning from VLM (null for local/stub) */
+  reasoning?: Record<string, string> | null;
 }
 
 export interface PartnerDropoff {

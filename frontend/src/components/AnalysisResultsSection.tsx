@@ -79,6 +79,10 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
 
   const formatConfidence = (val: number) => Math.round(val * 100);
 
+  const isVLM = analysis.source === "vlm";
+  const isStub = !analysis.source || analysis.source === "stub";
+  const reasoning = analysis.reasoning ?? {};
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
@@ -88,7 +92,19 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             AI Garment Diagnosis Complete
           </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          {/* Source badge */}
+          {isVLM && (
+            <span className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-100 text-violet-800 border border-violet-200">
+              <Sparkles className="w-3 h-3" />
+              AI vision analysis (estimate)
+            </span>
+          )}
+          {isStub && (
+            <span className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+              Demo mode
+            </span>
+          )}
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
             Garment Visual & Material Analysis
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
@@ -153,6 +169,11 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
             <p className="text-xs text-slate-500 mb-4">
               Coarse optical prediction via fine-tuned ResNet-18 (natural, synthetic, blend, or uncertain).
             </p>
+            {reasoning.material && (
+              <p className="text-xs text-violet-700 italic bg-violet-50 rounded-lg px-2.5 py-1.5 mb-2 border border-violet-100">
+                💬 {reasoning.material}
+              </p>
+            )}
           </div>
 
           <div>
@@ -214,6 +235,11 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
             <p className="text-xs text-slate-500 mb-4">
               Wear assessment (fading, pilling, structural retention) predicted via visual texture model.
             </p>
+            {reasoning.condition && (
+              <p className="text-xs text-violet-700 italic bg-violet-50 rounded-lg px-2.5 py-1.5 mb-2 border border-violet-100">
+                💬 {reasoning.condition}
+              </p>
+            )}
           </div>
 
           <div>
@@ -277,10 +303,20 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
 
             <div className="text-2xl font-extrabold text-slate-900 mb-1">
               {analysis.damage.area_percent}% Garment Area
+              {isVLM && (
+                <span className="ml-2 text-xs font-normal text-slate-400">(estimated)</span>
+              )}
             </div>
             <p className="text-xs text-slate-500 mb-4">
-              YOLOv8 defect bounding evaluation. Items with &lt;25% damage remain eligible for repair restoration.
+              {isVLM
+                ? "Visual estimate from AI analysis. Best-effort bounding box coordinates."
+                : "YOLOv8 defect bounding evaluation. Items with <25% damage remain eligible for repair restoration."}
             </p>
+            {reasoning.damage && (
+              <p className="text-xs text-violet-700 italic bg-violet-50 rounded-lg px-2.5 py-1.5 mb-2 border border-violet-100">
+                💬 {reasoning.damage}
+              </p>
+            )}
           </div>
 
           <div>

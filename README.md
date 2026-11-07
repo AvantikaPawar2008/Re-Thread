@@ -25,24 +25,39 @@ The fashion and textile industry is one of the world's most resource-intensive s
 
 1. **Frozen API Contract**: The API schemas between the Next.js frontend and FastAPI backend are strictly defined and validated with Pydantic V2.
 2. **Honest Optical AI Limits**: Consumer smartphone RGB cameras cannot reliably resolve fine blend ratios (e.g. 60/40 vs 80/20 cotton-poly). The system classifies coarse fabric families (*natural*, *synthetic*, *blend*, or *uncertain*) and treats tag OCR as an optional secondary confirmation.
-3. **Confidence Threshold Gating**: If visual prediction confidence falls below the calibrated threshold ($0.60$), the model returns `"uncertain"` rather than hallucinating.
-4. **Hybrid Decision Engine**: Hard deterministic business rules always execute first (Layer A), followed by scoring and ranking (Layer B), and geographical routing with LCA impact calculations (Layer C).
-5. **Startup Model Loading**: All heavy neural networks (YOLOv8, ResNet-18, XGBoost) load once into memory at application startup via a singleton registry.
-6. **Graceful Degradation**: If an image is blurry, a tag is missing, or machine learning model weights are absent, the platform never crashes—it gracefully degrades to typed fallbacks.
-7. **Verified Physical Verification Loop**: AI recommendations represent user intention; only when a physical drop-off partner scans the unique **QR Passport** does the transaction count as verified environmental data.
-8. **Localized Drop-off Infrastructure**: Pre-configured with a localized drop-off network of 15 verified facilities across municipal zones.
+3. **Pluggable Perception Hierarchy**: Perception currently leverages a Vision-Language Model (VLM) API (Google Gemini or OpenAI GPT-4o) for high-accuracy zero-shot multimodal diagnosis across material, condition, damage, and care tags in a single call. Local specialized weights (YOLOv8, ResNet-18) take precedence when available on disk (`weights/*.pt`), falling back to VLM if `VLM_API_KEY` is set, and finally to typed stubs.
+4. **Confidence Threshold Gating**: If visual prediction confidence falls below the calibrated threshold ($0.60$), the model returns `"uncertain"` rather than hallucinating.
+5. **Hybrid Decision Engine**: Hard deterministic business rules always execute first (Layer A), followed by scoring and ranking (Layer B), and geographical routing with LCA impact calculations (Layer C).
+6. **Startup Model Loading**: All heavy neural networks and VLM clients initialize once into memory at application startup via a singleton `ModelRegistry`.
+7. **Graceful Degradation**: If an image is blurry, a tag is missing, an API times out, or weights are absent, the platform never crashes—it gracefully degrades to typed fallbacks.
+8. **Verified Physical Verification Loop**: AI recommendations represent user intention; only when a physical drop-off partner scans the unique **QR Passport** does the transaction count as verified environmental data.
+9. **Localized Drop-off Infrastructure**: Pre-configured with a localized drop-off network of 15 verified facilities across municipal zones.
 
 ---
 
-## 3. System Architecture & Information Flow
+## 3. Perception Architecture & Current Status
+
+> **Engineering Note on Perception:**
+> Real-world circular textile perception requires simultaneous material identification, wear grading, defect bounding, and care tag parsing. Because training and collecting high-volume domain-specific textile datasets takes significant time, **perception currently operates via a multimodal Vision-Language Model (VLM) API** with a strict JSON system prompt and zero temperature.
+>
+> Dedicated local models (fine-tuned YOLOv8 for defect segmentation and care tag detection, and dual ResNet-18 for wear and fiber classification) are fully implemented and integrated. The system checks for local weights first, automatically routing to local execution when `.pt` weights exist in `weights/`.
 
 ```
 [Garment & Care Tag Photos]
              │
-             ├──► YOLOv8 Damage Segmentation (Detects defect boxes & calculates % damaged area)
-             ├──► ResNet-18 Material Classifier (Natural / Synthetic / Blend / Uncertain) ──► Grad-CAM Heatmap
-             ├──► ResNet-18 Wear Classifier (New / Gently Used / Worn / Heavily Worn)   ──► Grad-CAM Heatmap
-             └──► Care Tag OCR Pipeline (YOLOv8 crop ──► OpenCV CLAHE/Deskew ──► PaddleOCR ──► RapidFuzz + Vocab)
+     [Priority Router]
+             ├─► 1. Local Models (if weights/*.pt exist on disk)
+             │      ├── YOLOv8 Defect Segmentation + YOLOv8 Tag Detection
+             │      ├── ResNet-18 Material & Condition Classifiers + Grad-CAM Heatmaps
+             │      └── OpenCV Deskew + PaddleOCR + RapidFuzz
+             │
+             ├─► 2. VLM Perception API (Active when VLM_API_KEY is configured in .env)
+             │      ├── Single multimodal call (Google Gemini 2.0 / OpenAI GPT-4o)
+             │      ├── Strict Pydantic JSON validation + 1-attempt retry + 20s timeout
+             │      ├── Material, condition, damage area %, defect boxes & tag composition
+             │      └── One-sentence visual reasoning explanations returned to frontend
+             │
+             └─► 3. Typed Stub Fallback (Deterministic, safe demonstration mode)
              │
       [POST /analyze]
              ▼
@@ -194,6 +209,13 @@ cd "c:\ai project\rethread"
 # Install backend dependencies
 pip install -r backend/requirements.txt
 
+# Configure environment variables (VLM & Database)
+cp .env.example .env
+# Edit .env to set your VLM API Key (Google Gemini or OpenAI):
+#   VLM_PROVIDER=google
+#   VLM_API_KEY=your_gemini_api_key_here
+#   VLM_MODEL=gemini-2.0-flash
+
 # Seed the database with drop-off facilities, brands, and LCA impact factors
 python -m backend.app.seed.seed_data
 
@@ -204,6 +226,19 @@ python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
 - **Interactive API Documentation (Swagger UI):** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - **ReDoc Documentation:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 - **Health Check Endpoint:** [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+- **Model Registry & VLM Health:** [http://127.0.0.1:8000/health/models](http://127.0.0.1:8000/health/models)
+
+### CLI Diagnostic Tool: `try_vlm.py`
+
+Test perception on any single image from your terminal without opening the browser:
+
+```powershell
+# Run single-image diagnosis via configured VLM
+python scripts/try_vlm.py path/to/garment.jpg
+
+# Or pass both garment image and close-up care tag image
+python scripts/try_vlm.py path/to/garment.jpg path/to/care_tag.jpg
+```
 
 ### Step 2: Set Up and Run the Frontend
 
@@ -224,13 +259,15 @@ npm run dev
 
 ## 8. Running the Automated Test Suite
 
-Run the full pytest suite across all 39 tests:
+Run the full pytest suite across all 60 tests:
 
 ```powershell
 python -m pytest backend/tests -v
 ```
 
 **Test Coverage Summary:**
+- **`test_vlm.py` (15 tests)**: Unit tests with mocked VLM client covering valid JSON, markdown code fence stripping, retry on invalid JSON, fallback to stub on double-failure, timeout handling (20s), missing API key, confidence threshold gating, tag percentage sum verification ($\sim 100\%$), and vision-tag contradiction detection.
+- **`test_health.py`**: Health probe and model registry status verification (`/health` and `/health/models`).
 - **`test_e2e_pipeline.py`**: Full lifecycle flow from multipart photo upload $\rightarrow$ `/analyze` $\rightarrow$ `/recommend` $\rightarrow$ `/outcome/confirm`, latency checks ($< 100\text{ms}$ health, $< 350\text{ms}$ recommendation), and Ranker interface validation.
 - **`test_vision_models.py`**: Validates ResNet-18 condition and coarse material inference, confidence threshold gating ($0.60$), and stub fallbacks.
 - **`test_damage.py`**: Validates YOLOv8 defect detection, surface area percentage calculation, and bounding boxes.

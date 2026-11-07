@@ -92,6 +92,15 @@ class AnalyzeResponse(BaseModel):
     damage: DamageAnalysis
     tag: TagAnalysis
     composition_status: CompositionStatus
+    # Source metadata — "vlm", "local", or "stub" (optional, non-breaking addition)
+    source: Optional[str] = Field(
+        default="stub",
+        description="Perception source: 'vlm' | 'local' | 'stub'.",
+    )
+    reasoning: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Per-field short reasoning sentences from the VLM (null for local/stub).",
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -15,6 +15,7 @@ from backend.app.db import engine, get_db, Base
 from backend.app.ml.loader import model_registry
 from backend.app.models_db import Facility
 from backend.app.schemas import HealthResponse
+from typing import Any, Dict
 from backend.app.seed.seed_data import seed_all
 
 logger = logging.getLogger("rethread.main")
@@ -103,6 +104,18 @@ def health_check(db: Session = Depends(get_db)) -> HealthResponse:
         version=settings.VERSION,
         database=db_status,
     )
+
+
+@app.get(
+    "/health/models",
+    response_model=Dict[str, Any],
+    status_code=status.HTTP_200_OK,
+    tags=["System"],
+    summary="Model registry health — which components are active",
+)
+def health_models() -> Dict[str, Any]:
+    """Returns the status of every ML component and the active perception provider."""
+    return model_registry.get_health_detail()
 
 
 # Register API Routers (both root level per docs and /api/v1 prefix)
