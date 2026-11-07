@@ -1,6 +1,6 @@
 """Tests for POST /recommend endpoint."""
 
-from backend.app.schemas import RecommendResponse
+from app.schemas import RecommendResponse
 
 
 def test_recommend_pathways(client):

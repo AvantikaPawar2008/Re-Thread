@@ -1,0 +1,50 @@
+/* ===== Additions used by FabricGuide.tsx ===== */
+.fg-page { font-family: inherit; }
+.fg-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Cards are <button>s, so their children are spans (valid HTML) */
+.fg-cards { margin: 0; padding: 0; list-style: none; }
+.fg-cards > li { display: flex; }
+.fg-cards > li > .fg-card { flex: 1; width: 100%; }
+.fg-cardSwatch, .fg-cardName, .fg-cardTag, .fg-cardLink { display: block; }
+
+.fg-searchClear {
+  display: grid; place-items: center; width: 30px; height: 30px; flex: none;
+  color: #6f8077; background: #f2f1ea; border: 0; border-radius: 50%; cursor: pointer;
+}
+.fg-searchClear:hover { color: var(--fg-ink); background: #e7e4d8; }
+.fg-search input::placeholder { color: #8a988f; }
+
+.fg-chip:focus-visible, .fg-sort button:focus-visible, .fg-back:focus-visible, .fg-searchClear:focus-visible {
+  outline: 3px solid var(--fg-green); outline-offset: 2px;
+}
+.fg-h1:focus { outline: none; }
+
+.fg-empty strong { color: var(--fg-ink); font-size: 18px; }
+.fg-emptyBtn {
+  height: 40px; padding: 0 18px; font: inherit; font-size: 14px; font-weight: 700;
+  color: #fff; background: var(--fg-green); border: 0; border-radius: 999px; cursor: pointer;
+}
+.fg-emptyBtn:hover { background: var(--fg-green-dark); }
+
+.fg-impactWord { margin: 14px 0 0; font-size: 14px; line-height: 1.5; color: var(--fg-muted); }
+.fg-impactText { margin: 16px 0 0; font-size: 16px; line-height: 1.5; font-weight: 600; color: var(--fg-ink); }
+.fg-span2 { grid-column: 1 / -1; }
+
+.fg-sectionTitle { margin: 30px 2px 14px; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-muted); }
+.fg-projectHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.fg-projectHead .fg-blockTitle { margin: 0; }
+.fg-why { margin: 0 0 4px; font-size: 15px; line-height: 1.6; color: #3d4f45; }
+.fg-sub { margin: 18px 0 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-muted); }
+.fg-tag[data-level="Medium"] { color: #7a4f08; background: #fbefd2; }
+.fg-tag[data-level="Advanced"] { color: #8d2f2b; background: #fbe3e1; }
+
+.fg-steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; counter-reset: fgstep; }
+.fg-steps li { counter-increment: fgstep; position: relative; padding-left: 40px; font-size: 15px; line-height: 1.55; color: #3d4f45; }
+.fg-steps li::before {
+  content: counter(fgstep); position: absolute; left: 0; top: -1px; width: 27px; height: 27px;
+  display: grid; place-items: center; font-size: 13px; font-weight: 800;
+  color: var(--fg-green-dark); background: var(--fg-soft); border-radius: 50%;
+}
+.fg-knowLabel { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #bfe3cf; }
+.fg-miniCards { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }

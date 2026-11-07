@@ -5,14 +5,14 @@ import numpy as np
 from PIL import Image
 import pytest
 
-from backend.app.ml.tag.clean import clean_tag_image
-from backend.app.ml.tag.parse import (
+from app.ml.tag.clean import clean_tag_image
+from app.ml.tag.parse import (
     determine_tag_coarse_type,
     extract_fiber_composition,
     match_brand,
     parse_tag_and_crosscheck,
 )
-from backend.app.schemas import TagAnalysis
+from app.schemas import TagAnalysis
 
 
 # ---------------------------------------------------------------------------

@@ -3,8 +3,8 @@
 import math
 from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
-from backend.app.models_db import Facility
-from backend.app.schemas import PartnerDropoff
+from app.models_db import Facility
+from app.schemas import PartnerDropoff
 
 # Pathway to facility type mapping
 PATHWAY_FACILITY_TYPE_MAP = {

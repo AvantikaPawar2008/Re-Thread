@@ -7,9 +7,9 @@ Scanned by partner drop-off locations to confirm real intake outcomes
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from backend.app.db import get_db
-from backend.app.models_db import Outcome, Recommendation
-from backend.app.schemas import OutcomeConfirmRequest, OutcomeConfirmResponse
+from app.db import get_db
+from app.models_db import Outcome, Recommendation
+from app.schemas import OutcomeConfirmRequest, OutcomeConfirmResponse
 
 router = APIRouter()
 

@@ -8,8 +8,8 @@ from alembic import context
 # Ensure backend package is in python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from backend.app.config import settings
-from backend.app.models_db import Base
+from app.config import settings
+from app.models_db import Base
 
 config = context.config
 

@@ -6,17 +6,17 @@ from PIL import Image
 import pytest
 import torch
 
-from backend.app.ml.condition import (
+from app.ml.condition import (
     analyze_condition,
     is_using_stub as condition_is_stub,
     load_condition_model,
 )
-from backend.app.ml.material import (
+from app.ml.material import (
     analyze_material,
     is_using_stub as material_is_stub,
     load_material_model,
 )
-from backend.app.schemas import ConditionAnalysis, MaterialAnalysis
+from app.schemas import ConditionAnalysis, MaterialAnalysis
 
 
 def create_dummy_jpeg_bytes() -> bytes:
@@ -30,7 +30,7 @@ def create_dummy_jpeg_bytes() -> bytes:
 # ---------------------------------------------------------------------------
 def test_condition_fallback_when_weights_missing():
     """Verify condition classifier falls back to stub when weights/condition.pt is absent."""
-    with patch("backend.app.ml.condition.WEIGHTS_PATH") as mock_path:
+    with patch("app.ml.condition.WEIGHTS_PATH") as mock_path:
         mock_path.exists.return_value = False
         loaded = load_condition_model()
         assert loaded is False
@@ -50,8 +50,8 @@ def test_condition_inference_with_mock_model():
 
     img_bytes = create_dummy_jpeg_bytes()
 
-    with patch("backend.app.ml.condition._condition_model", mock_model):
-        with patch("backend.app.ml.condition._is_stub_mode", False):
+    with patch("app.ml.condition._condition_model", mock_model):
+        with patch("app.ml.condition._is_stub_mode", False):
             res = analyze_condition([img_bytes])
             assert isinstance(res, ConditionAnalysis)
             assert res.label == "worn"
@@ -63,7 +63,7 @@ def test_condition_inference_with_mock_model():
 # ---------------------------------------------------------------------------
 def test_material_fallback_when_weights_missing():
     """Verify material classifier falls back to stub when weights/material.pt is absent."""
-    with patch("backend.app.ml.material.WEIGHTS_PATH") as mock_path:
+    with patch("app.ml.material.WEIGHTS_PATH") as mock_path:
         mock_path.exists.return_value = False
         loaded = load_material_model()
         assert loaded is False
@@ -83,8 +83,8 @@ def test_material_confidence_threshold_gating():
 
     img_bytes = create_dummy_jpeg_bytes()
 
-    with patch("backend.app.ml.material._material_model", mock_model):
-        with patch("backend.app.ml.material._is_stub_mode", False):
+    with patch("app.ml.material._material_model", mock_model):
+        with patch("app.ml.material._is_stub_mode", False):
             res = analyze_material([img_bytes], confidence_threshold=0.60)
             assert isinstance(res, MaterialAnalysis)
             assert res.label == "uncertain"
@@ -102,8 +102,8 @@ def test_material_inference_with_confident_mock():
 
     img_bytes = create_dummy_jpeg_bytes()
 
-    with patch("backend.app.ml.material._material_model", mock_model):
-        with patch("backend.app.ml.material._is_stub_mode", False):
+    with patch("app.ml.material._material_model", mock_model):
+        with patch("app.ml.material._is_stub_mode", False):
             res = analyze_material([img_bytes], confidence_threshold=0.60)
             assert isinstance(res, MaterialAnalysis)
             assert res.label == "natural"

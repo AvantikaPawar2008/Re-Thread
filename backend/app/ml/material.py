@@ -17,9 +17,9 @@ from PIL import Image
 import torchvision.transforms as transforms
 from torchvision.models import resnet18
 
-from backend.app.config import settings
-from backend.app.ml.gradcam import generate_gradcam_heatmap
-from backend.app.schemas import MaterialAnalysis, MaterialLabel
+from app.config import settings
+from app.ml.gradcam import generate_gradcam_heatmap
+from app.schemas import MaterialAnalysis, MaterialLabel
 
 logger = logging.getLogger("ml.material")
 

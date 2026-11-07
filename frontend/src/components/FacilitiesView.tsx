@@ -1,264 +1,251 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  MapPin,
-  Phone,
-  Globe,
-  Scissors,
-  Heart,
-  Recycle,
-  Tag,
-  Building,
-  CheckCircle2,
-} from "lucide-react";
+import { useMemo, useState } from "react";
+import "./facilities.css";
 
-interface FacilityItem {
+export type HubType = "dropoff" | "repair" | "donate" | "recycle";
+
+export type Hub = {
+  id: string;
   name: string;
-  type: "repair" | "donation" | "recycling" | "brand_store";
+  area: string;
   address: string;
-  neighborhood: string;
-  phone: string;
-  website: string;
-  materials: string;
-  notes: string;
-}
+  type: HubType;
+  hours: string;
+  accepts: string[];
+  phone?: string;
+  distanceKm?: number;
+};
 
-const PUNE_FACILITIES: FacilityItem[] = [
+export type FacilitiesViewProps = {
+  hubs?: Hub[];
+};
+
+const TYPE_META: Record<HubType, { label: string }> = {
+  dropoff: { label: "Drop-off" },
+  repair: { label: "Repair" },
+  donate: { label: "Donate" },
+  recycle: { label: "Recycle" },
+};
+
+const FILTERS: { value: HubType | "all"; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "dropoff", label: "Drop-off" },
+  { value: "repair", label: "Repair" },
+  { value: "donate", label: "Donate" },
+  { value: "recycle", label: "Recycle" },
+];
+
+// Sample data only. Replace with real hubs via the `hubs` prop.
+const SAMPLE_HUBS: Hub[] = [
   {
-    name: "FC Road Master Tailors & Alterations",
+    id: "h1",
+    name: "Sample Textile Drop-off",
+    area: "Kothrud",
+    address: "Sample address, Kothrud, Pune",
+    type: "dropoff",
+    hours: "Mon–Sat, 10:00–18:00",
+    accepts: ["Clothing", "Bed linen", "Shoes"],
+    phone: "+91 00000 00000",
+    distanceKm: 2.4,
+  },
+  {
+    id: "h2",
+    name: "Sample Repair Studio",
+    area: "Deccan",
+    address: "Sample address, Deccan, Pune",
     type: "repair",
-    address: "1194/1 Fergusson College Rd, Shivajinagar",
-    neighborhood: "Shivajinagar / FC Road",
-    phone: "+91-20-2553-1200",
-    website: "https://fcroad-tailors.example.com",
-    materials: "All fabrics, denim, shirts, trousers",
-    notes: "Expert alterations, zipper replacements, patch mending, and resizing.",
+    hours: "Tue–Sun, 11:00–19:00",
+    accepts: ["Seam repair", "Buttons", "Zips", "Hemming"],
+    distanceKm: 4.1,
   },
   {
-    name: "Kothrud Garment Repair & Upcycling Studio",
-    type: "repair",
-    address: "Shop 4, Mayur Colony, Kothrud",
-    neighborhood: "Kothrud",
-    phone: "+91-20-2544-3321",
-    website: "https://kothrudrepair.example.com",
-    materials: "Cotton, wool, silk, denim",
-    notes: "Specialises in darning, torn seam restoration, and denim reinforcement.",
+    id: "h3",
+    name: "Sample Community Donation Centre",
+    area: "Aundh",
+    address: "Sample address, Aundh, Pune",
+    type: "donate",
+    hours: "Daily, 09:00–17:00",
+    accepts: ["Wearable clothing", "Blankets"],
+    phone: "+91 00000 00001",
+    distanceKm: 6.8,
   },
   {
-    name: "Camp Leather & Heavy Garment Mending",
-    type: "repair",
-    address: "241 MG Road, Camp",
-    neighborhood: "Camp / MG Road",
-    phone: "+91-20-2613-8890",
-    website: "https://campmending.example.com",
-    materials: "Leather, heavy denim, jackets, coats",
-    notes: "Heavy fabric and winterwear restoration specialists.",
-  },
-  {
-    name: "Aundh Needlecraft & Restyling Studio",
-    type: "repair",
-    address: "ITI Road, Near Parihar Chowk, Aundh",
-    neighborhood: "Aundh",
-    phone: "+91-20-2588-4455",
-    website: "https://aundhcraft.example.com",
-    materials: "All textiles",
-    notes: "Artisanal mending, embroidery patch repair, and garment transformation.",
-  },
-  {
-    name: "Goonj Dropping Centre - Kothrud",
-    type: "donation",
-    address: "Plot 12, Ideal Colony, Paud Road, Kothrud",
-    neighborhood: "Kothrud",
-    phone: "+91-98220-11223",
-    website: "https://goonj.org",
-    materials: "Wearable everyday clothing, sarees, kurtas",
-    notes: "Accepts clean wearable clothing for disaster relief and community development.",
-  },
-  {
-    name: "Goodwill India Collection Point - Camp",
-    type: "donation",
-    address: "45 East Street, Near Camp Post Office",
-    neighborhood: "Camp",
-    phone: "+91-20-2634-1100",
-    website: "https://goodwillindia.org",
-    materials: "Adult and children apparel, shoes",
-    notes: "Sorting and redistributing clean, wearable apparel to underprivileged families.",
-  },
-  {
-    name: "Maher Ashram Garment Bank",
-    type: "donation",
-    address: "Wagholi-Pune Road, Bakori Phata",
-    neighborhood: "Wagholi",
-    phone: "+91-20-2705-0112",
-    website: "https://maherashram.org",
-    materials: "Everyday clothing, sweaters, cottons",
-    notes: "Accepts everyday wear clothing for children, women and elders.",
-  },
-  {
-    name: "Robin Hood Army Clothes Drop - Shivajinagar",
-    type: "donation",
-    address: "Modern College Rd, Shivajinagar",
-    neighborhood: "Shivajinagar",
-    phone: "+91-98901-44332",
-    website: "https://robinhoodarmy.com",
-    materials: "Clean wearable garments",
-    notes: "Civic volunteer network redistributing wearable garments across community bastis.",
-  },
-  {
-    name: "Swach Pune Material Recovery Facility",
-    type: "recycling",
-    address: "Hadapsar Industrial Estate, Hadapsar",
-    neighborhood: "Hadapsar",
-    phone: "+91-20-2681-7788",
-    website: "https://swachcoop-pune.org",
-    materials: "Worn, torn, or stained textiles",
-    notes: "Waste picker cooperative sorting textiles for industrial fiber downcycling.",
-  },
-  {
-    name: "PCMC Textile Segregation Hub",
-    type: "recycling",
-    address: "Sector 10, Bhosari, PCMC",
-    neighborhood: "Bhosari / PCMC",
-    phone: "+91-20-2712-4400",
-    website: "https://pcmcindia.gov.in",
-    materials: "All unwearable post-consumer textiles",
-    notes: "Municipal mechanical sorting and fiber segregation center.",
-  },
-  {
-    name: "Kasba Peth Traditional Textile Recyclers",
-    type: "recycling",
-    address: "122 Kasba Peth, Near Shaniwar Wada",
-    neighborhood: "Kasba Peth / Old Pune",
-    phone: "+91-98224-77112",
-    website: "https://kasbapethrecyclers.example.com",
-    materials: "Natural cottons and handlooms",
-    notes: "Traditional chindi recyclers processing cotton rags for handmade paper.",
-  },
-  {
-    name: "H&M In-Store Takeback - Phoenix Marketcity",
-    type: "brand_store",
-    address: "Ground Floor, Phoenix Marketcity, Viman Nagar",
-    neighborhood: "Viman Nagar",
-    phone: "+91-20-6689-0100",
-    website: "https://www2.hm.com/en_in",
-    materials: "Any brand, any condition",
-    notes: "In-store garment collection box; gives 15% discount voucher per bag.",
-  },
-  {
-    name: "Decathlon Sports Gear Takeback - Amanora",
-    type: "brand_store",
-    address: "Amanora Mall, Hadapsar-Kharadi Bypass",
-    neighborhood: "Hadapsar / Amanora",
-    phone: "+91-20-6726-2200",
-    website: "https://decathlon.in",
-    materials: "Synthetics, activewear, fleece",
-    notes: "Accepts athletic wear, fleece, and synthetic jackets for recycling.",
-  },
-  {
-    name: "Levi's Store & Tailor Hub - The Pavillion",
-    type: "brand_store",
-    address: "The Pavillion Mall, Senapati Bapat Road",
-    neighborhood: "Senapati Bapat Road",
-    phone: "+91-20-6642-1500",
-    website: "https://levi.in",
-    materials: "Denim and cotton apparel",
-    notes: "In-store denim customization, repair, and take-back drop box.",
+    id: "h4",
+    name: "Sample Fibre Recycling Point",
+    area: "Hadapsar",
+    address: "Sample address, Hadapsar, Pune",
+    type: "recycle",
+    hours: "Mon–Fri, 10:00–16:00",
+    accepts: ["Worn-out fabric", "Mixed textiles"],
+    distanceKm: 9.2,
   },
 ];
 
-export const FacilitiesView: React.FC = () => {
-  const [filter, setFilter] = useState<string>("all");
+export function FacilitiesView({ hubs = SAMPLE_HUBS }: FacilitiesViewProps) {
+  const [filter, setFilter] = useState<HubType | "all">("all");
+  const [query, setQuery] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const filtered =
-    filter === "all" ? PUNE_FACILITIES : PUNE_FACILITIES.filter((f) => f.type === filter);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return hubs.filter((h) => {
+      if (filter !== "all" && h.type !== filter) return false;
+      if (!q) return true;
+      return (
+        h.name.toLowerCase().includes(q) ||
+        h.area.toLowerCase().includes(q) ||
+        h.accepts.some((a) => a.toLowerCase().includes(q))
+      );
+    });
+  }, [hubs, filter, query]);
+
+  const selected = filtered.find((h) => h.id === selectedId) ?? filtered[0] ?? null;
+
+  const countFor = (value: HubType | "all") =>
+    value === "all" ? hubs.length : hubs.filter((h) => h.type === value).length;
+
+  const resetFilters = () => {
+    setFilter("all");
+    setQuery("");
+  };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-6">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 mb-2">
-          <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-          Verified Drop-Off Network
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-          Pune Partner Drop-Off Hubs
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Explore eligible partner facilities in Pune for garment repair, donation, recycling, and brand take-back.
+    <section className="fh" aria-labelledby="fh-title">
+      <header className="fh-header">
+        <p className="fh-eyebrow">
+          <span className="fh-eyebrowRule" aria-hidden="true" />
+          Pune network
         </p>
+        <h2 id="fh-title" className="fh-title">
+          Drop-off <em>hubs</em>
+        </h2>
+        <p className="fh-lead">
+          Find where to drop, repair, donate or recycle your garments. Every hub lists what it accepts, so you
+          know before you go.
+        </p>
+      </header>
+
+      <div className="fh-toolbar">
+        <label className="fh-search">
+          <span className="fh-sr">Search hubs</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            type="search"
+            placeholder="Search by name, area or item"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+
+        <div className="fh-filters" role="group" aria-label="Filter by service">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              className="fh-filter"
+              aria-pressed={filter === f.value}
+              onClick={() => setFilter(f.value)}
+            >
+              {f.label}
+              <span className="fh-count">{countFor(f.value)}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {[
-          { id: "all", label: "All Hubs (15)" },
-          { id: "repair", label: "Repair Shops (4)" },
-          { id: "donation", label: "Donation Centers (4)" },
-          { id: "recycling", label: "Recycling Facilities (3)" },
-          { id: "brand_store", label: "Brand Stores (3)" },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setFilter(tab.id)}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              filter === tab.id
-                ? "bg-slate-900 text-white shadow-xs"
-                : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-            }`}
-          >
-            {tab.label}
+      {filtered.length === 0 ? (
+        <div className="fh-empty">
+          <p className="fh-emptyTitle">No hubs match your search</p>
+          <p className="fh-emptyText">Try a different area or item, or clear the filters.</p>
+          <button type="button" className="fh-btnGhost" onClick={resetFilters}>
+            Clear filters
           </button>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="fh-layout">
+          <ul className="fh-list" role="list" aria-label="Hubs">
+            {filtered.map((h) => {
+              const active = selected?.id === h.id;
+              return (
+                <li key={h.id}>
+                  <button
+                    type="button"
+                    className={`fh-item${active ? " fh-item--active" : ""}`}
+                    aria-current={active ? "true" : undefined}
+                    onClick={() => setSelectedId(h.id)}
+                  >
+                    <div className="fh-itemTop">
+                      <span className={`fh-type fh-type--${h.type}`}>{TYPE_META[h.type].label}</span>
+                      {h.distanceKm !== undefined && <span className="fh-distance">{h.distanceKm} km</span>}
+                    </div>
+                    <p className="fh-itemName">{h.name}</p>
+                    <p className="fh-itemMeta">
+                      {h.area} · {h.hours}
+                    </p>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
 
-      {/* Facilities Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filtered.map((item, idx) => (
-          <div
-            key={idx}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h2 className="font-extrabold text-slate-900 text-sm">
-                  {item.name}
-                </h2>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 uppercase tracking-wide ${
-                    item.type === "repair"
-                      ? "bg-amber-100 text-amber-800"
-                      : item.type === "donation"
-                      ? "bg-blue-100 text-blue-800"
-                      : item.type === "recycling"
-                      ? "bg-slate-200 text-slate-800"
-                      : "bg-purple-100 text-purple-800"
-                  }`}
+          {selected && (
+            <article className="fh-detail" aria-live="polite">
+              <div className="fh-detailTop">
+                <span className={`fh-type fh-type--${selected.type}`}>{TYPE_META[selected.type].label}</span>
+                {selected.distanceKm !== undefined && (
+                  <span className="fh-distance">{selected.distanceKm} km away</span>
+                )}
+              </div>
+
+              <h3 className="fh-detailName">{selected.name}</h3>
+              <p className="fh-address">{selected.address}</p>
+
+              <dl className="fh-facts">
+                <div>
+                  <dt>Hours</dt>
+                  <dd>{selected.hours}</dd>
+                </div>
+                <div>
+                  <dt>Area</dt>
+                  <dd>{selected.area}</dd>
+                </div>
+              </dl>
+
+              <p className="fh-sectionLabel">Accepts</p>
+              <ul className="fh-chips" role="list">
+                {selected.accepts.map((a) => (
+                  <li key={a} className="fh-chip">
+                    {a}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="fh-actions">
+                <a
+                  className="fh-btnPrimary"
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selected.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  {item.type.replace("_", " ")}
-                </span>
+                  Get directions
+                  <span aria-hidden="true">→</span>
+                </a>
+                {selected.phone && (
+                  <a className="fh-btnGhost" href={`tel:${selected.phone.replace(/\s/g, "")}`}>
+                    Call hub
+                  </a>
+                )}
               </div>
-
-              <div className="flex items-center gap-1.5 text-xs text-slate-600 mb-2">
-                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>{item.address}</span>
-              </div>
-
-              <p className="text-xs text-slate-500 mb-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                {item.notes}
-              </p>
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-              <span className="font-medium text-slate-700">Area: {item.neighborhood}</span>
-              <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Active Intake
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+            </article>
+          )}
+        </div>
+      )}
+    </section>
   );
-};
+}
+
+export default FacilitiesView;

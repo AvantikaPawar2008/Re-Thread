@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   QrCode,
   RotateCcw,
-  ExternalLink,
   ChevronRight,
   ShieldCheck,
   Building,
@@ -26,50 +25,26 @@ interface RecommendationsSectionProps {
   onReset: () => void;
 }
 
-const PATHWAY_NAMES: Record<string, { title: string; badge: string; color: string }> = {
-  repair: {
-    title: "Garment Repair & Restoration",
-    badge: "Repair",
-    color: "from-amber-500 to-orange-500",
-  },
-  reuse_resell: {
-    title: "Resale & Direct Reuse",
-    badge: "Reuse / Resell",
-    color: "from-emerald-500 to-teal-500",
-  },
-  donate: {
-    title: "Community Clothing Donation",
-    badge: "Donate",
-    color: "from-blue-500 to-cyan-500",
-  },
-  brand_takeback: {
-    title: "Brand In-Store Takeback",
-    badge: "Brand Takeback",
-    color: "from-purple-500 to-indigo-500",
-  },
-  recycle: {
-    title: "Textile Shredding & Fiber Recycling",
-    badge: "Recycle",
-    color: "from-slate-600 to-slate-800",
-  },
+const PATHWAY_NAMES: Record<string, { title: string; badge: string }> = {
+  repair: { title: "Garment Repair & Restoration", badge: "Repair" },
+  reuse_resell: { title: "Resale & Direct Reuse", badge: "Reuse / Resell" },
+  donate: { title: "Community Clothing Donation", badge: "Donate" },
+  brand_takeback: { title: "Brand In-Store Takeback", badge: "Brand Takeback" },
+  recycle: { title: "Textile Shredding & Fibre Recycling", badge: "Recycle" },
 };
 
 export const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
   recommendations,
-  userLocation,
   onReset,
 }) => {
   const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [selectedPathway, setSelectedPathway] = useState<RankedPathway>(
     recommendations.ranked_pathways[0]
   );
-
-  // Partner scan simulation state
   const [scanConfirmed, setScanConfirmed] = useState<boolean>(false);
   const [confirming, setConfirming] = useState<boolean>(false);
   const [confirmMessage, setConfirmMessage] = useState<string>("");
 
-  // Generate QR code on canvas whenever qr_id changes
   useEffect(() => {
     if (qrCanvasRef.current && recommendations.qr_id) {
       QRCode.toCanvas(
@@ -78,10 +53,7 @@ export const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
         {
           width: 200,
           margin: 1.5,
-          color: {
-            dark: "#064e3b",
-            light: "#ffffff",
-          },
+          color: { dark: "#0b2a44", light: "#ffffff" },
         },
         (error) => {
           if (error) console.error("QR Code generation error:", error);
@@ -95,7 +67,7 @@ export const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
     try {
       const res = await confirmOutcome(
         recommendations.qr_id,
-        1, // Default facility ID (FC Road Master Tailors / Kothrud)
+        1, // Default facility ID
         selectedPathway.pathway,
         "Confirmed via partner test scanner interface"
       );
@@ -110,190 +82,171 @@ export const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
   };
 
   const topPathway = recommendations.ranked_pathways[0];
+  const topMeta = PATHWAY_NAMES[topPathway.pathway];
+  const maxShap = Math.max(...Object.values(recommendations.shap).map((w) => Math.abs(w)), 0.01);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* Top Banner Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div className="mx-auto max-w-5xl px-5 py-10 text-slate-900">
+      {/* Header */}
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            Decision Engine Output
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Recommended Circular Next Life
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Hybrid rule & ranking optimization considering condition, defect %, distance, and climate impact.
+          <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-[#e6eef5] px-3 py-1 text-xs font-semibold text-[#0b2a44]">
+            <Sparkles className="h-3.5 w-3.5 text-[#1d5c8c]" aria-hidden />
+            Your recommendation
+          </p>
+          <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Your best next step</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Based on the garment's condition, damage, and nearby options.
           </p>
         </div>
         <button
           onClick={onReset}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors w-fit"
+          className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-[#1d5c8c] hover:text-[#1d5c8c]"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
-          Scan Another Item
+          <RotateCcw className="h-4 w-4" aria-hidden />
+          Scan another item
         </button>
       </div>
 
-      {/* Primary Recommendation Feature Card */}
-      <div className="rounded-3xl bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-900 text-white p-6 sm:p-8 shadow-xl mb-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Primary recommendation */}
+      <section className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-[#e6f2fb] via-[#d2e7f6] to-[#b9d9ef] p-7 shadow-lg sm:p-9">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-white/50 blur-3xl" />
 
-        <div className="relative z-10">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-400 text-emerald-950 uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
-              <Award className="w-4 h-4" />
-              Primary Recommendation
+        <div className="relative">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0b2a44] px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-white">
+              <Award className="h-4 w-4" aria-hidden />
+              Best match
             </span>
-            <span className="text-xs font-semibold text-emerald-200 flex items-center gap-1">
-              Match Confidence: {Math.round(topPathway.score * 100)}%
+            <span className="text-xs font-semibold text-[#174e7c]">
+              Match confidence: {Math.round(topPathway.score * 100)}%
             </span>
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight mb-3">
-            {PATHWAY_NAMES[topPathway.pathway]?.title || topPathway.pathway.replace("_", " ")}
+          <h2 className="text-2xl font-black tracking-tight text-[#0b2a44] sm:text-3xl">
+            {topMeta?.title || topPathway.pathway.replace(/_/g, " ")}
           </h2>
 
-          {/* Plain-Language Explanation Trace */}
-          <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-sm text-emerald-50 leading-relaxed mb-6">
-            <p className="font-medium">
-              &ldquo;{recommendations.explanation}&rdquo;
-            </p>
+          <div className="mt-5 rounded-2xl border border-white/70 bg-white/70 p-5 text-sm leading-relaxed text-[#1f3a52] backdrop-blur">
+            <p className="font-medium">&ldquo;{recommendations.explanation}&rdquo;</p>
           </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="p-3 rounded-xl bg-white/10 border border-white/10">
-              <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-semibold mb-1">
-                <Droplets className="w-4 h-4 text-cyan-300" />
-                Water Saved
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl bg-white/80 p-4">
+              <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-[#1d5c8c]">
+                <Droplets className="h-4 w-4" aria-hidden />
+                Water saved
               </div>
-              <div className="text-lg font-extrabold text-white">
+              <div className="text-xl font-extrabold text-[#0b2a44]">
                 {topPathway.impact.water_litres_saved.toLocaleString()} L
               </div>
-              <span className="text-[10px] text-emerald-200">Avoids virgin production</span>
+              <p className="mt-0.5 text-[11px] text-slate-600">Avoids virgin production</p>
             </div>
 
-            <div className="p-3 rounded-xl bg-white/10 border border-white/10">
-              <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-semibold mb-1">
-                <Leaf className="w-4 h-4 text-emerald-300" />
-                CO₂ Avoided
+            <div className="rounded-2xl bg-white/80 p-4">
+              <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-[#1d5c8c]">
+                <Leaf className="h-4 w-4" aria-hidden />
+                CO₂ avoided
               </div>
-              <div className="text-lg font-extrabold text-white">
-                {topPathway.impact.co2_kg_saved} kg
-              </div>
-              <span className="text-[10px] text-emerald-200">Published LCA factor</span>
+              <div className="text-xl font-extrabold text-[#0b2a44]">{topPathway.impact.co2_kg_saved} kg</div>
+              <p className="mt-0.5 text-[11px] text-slate-600">Published LCA factor</p>
             </div>
 
-            <div className="p-3 rounded-xl bg-white/10 border border-white/10 col-span-2 sm:col-span-1">
-              <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-semibold mb-1">
-                <MapPin className="w-4 h-4 text-amber-300" />
-                Nearest Partner
+            <div className="col-span-2 rounded-2xl bg-white/80 p-4 sm:col-span-1">
+              <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-[#1d5c8c]">
+                <MapPin className="h-4 w-4" aria-hidden />
+                Nearest partner
               </div>
-              <div className="text-sm font-bold text-white truncate">
-                {topPathway.nearest_partner?.name || "Local Partner"}
+              <div className="truncate text-sm font-bold text-[#0b2a44]">
+                {topPathway.nearest_partner?.name || "Local partner"}
               </div>
-              <span className="text-[10px] text-emerald-200">
-                {topPathway.nearest_partner?.distance_km} km from user
-              </span>
+              <p className="mt-0.5 text-[11px] text-slate-600">
+                {topPathway.nearest_partner?.distance_km} km from you
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Main Grid: Pathways List on Left, QR & Partner Details on Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
-        {/* Left: 5 Ranked Pathways Selection */}
-        <div className="lg:col-span-7 space-y-4">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center justify-between">
-            <span>All 5 Evaluated Pathways</span>
-            <span className="text-xs font-normal text-slate-500">Ranked by desirability & distance</span>
-          </h2>
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        {/* Pathways */}
+        <div className="space-y-4 lg:col-span-7">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-bold">All {recommendations.ranked_pathways.length} options</h2>
+            <span className="text-xs text-slate-500">Ranked by fit and distance</span>
+          </div>
 
           <div className="space-y-2.5">
             {recommendations.ranked_pathways.map((item, idx) => {
               const isSelected = selectedPathway.pathway === item.pathway;
-              const meta = PATHWAY_NAMES[item.pathway] || {
-                title: item.pathway,
-                badge: item.pathway,
-                color: "from-slate-500 to-slate-700",
-              };
+              const meta = PATHWAY_NAMES[item.pathway] || { title: item.pathway, badge: item.pathway };
 
               return (
-                <div
+                <button
                   key={item.pathway}
+                  type="button"
                   onClick={() => setSelectedPathway(item)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                  aria-pressed={isSelected}
+                  className={`w-full rounded-2xl border p-4 text-left transition-all ${
                     isSelected
-                      ? "border-emerald-500 bg-emerald-50/40 shadow-xs ring-1 ring-emerald-500/20"
-                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70"
+                      ? "border-[#1d5c8c] bg-[#f0f7fc] ring-2 ring-[#1d5c8c]/15"
+                      : "border-slate-200 bg-white hover:border-[#9fc6e4] hover:bg-slate-50"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center">
-                        #{idx + 1}
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
+                        {idx + 1}
                       </span>
-                      <span className="font-bold text-sm text-slate-900">
-                        {meta.title}
-                      </span>
+                      <span className="truncate text-sm font-bold">{meta.title}</span>
                     </div>
-
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex shrink-0 items-center gap-2">
                       {item.eligible ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                        <span className="rounded-full bg-[#e6f2fb] px-2 py-0.5 text-[10px] font-bold text-[#174e7c]">
                           Eligible
                         </span>
                       ) : (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
-                          Restricted by Rules
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                          Not suitable
                         </span>
                       )}
-                      <span className="text-xs font-black text-slate-700 ml-1">
-                        {Math.round(item.score * 100)}%
-                      </span>
+                      <span className="text-xs font-black text-slate-700">{Math.round(item.score * 100)}%</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-slate-500 pl-8">
+                  <div className="flex items-center justify-between pl-8 text-xs text-slate-500">
                     <span>
                       {item.nearest_partner ? `${item.nearest_partner.distance_km} km away` : "Drop-off partner available"}
                     </span>
-                    <span className="text-emerald-700 font-medium">
+                    <span className="font-medium text-[#1d5c8c]">
                       +{item.impact.water_litres_saved.toLocaleString()} L water saved
                     </span>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
 
-          {/* Explainability (SHAP) Insights Drawer */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Decision Explainability (SHAP Feature Attribution)
+          {/* Explainability */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+            <h3 className="mb-1.5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+              <ShieldCheck className="h-4 w-4 text-[#1d5c8c]" aria-hidden />
+              Why this was ranked this way
             </h3>
-            <p className="text-xs text-slate-500 mb-3">
-              How individual attributes influenced the ranking model for this recommendation:
-            </p>
-            <div className="space-y-2">
+            <p className="mb-4 text-xs text-slate-500">How each factor influenced this recommendation.</p>
+            <div className="space-y-3">
               {Object.entries(recommendations.shap).map(([feat, weight]) => (
-                <div key={feat} className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-700 capitalize">
-                    {feat.replace("_", " ")}
-                  </span>
+                <div key={feat} className="flex items-center justify-between gap-3 text-xs">
+                  <span className="font-medium capitalize text-slate-700">{feat.replace(/_/g, " ")}</span>
                   <div className="flex items-center gap-2">
-                    <div className="w-32 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                    <div className="h-1.5 w-32 overflow-hidden rounded-full bg-slate-100">
                       <div
-                        className={`h-full rounded-full ${
-                          weight >= 0 ? "bg-emerald-500" : "bg-rose-400"
-                        }`}
-                        style={{ width: `${Math.min(100, Math.abs(weight) * 200)}%` }}
+                        className={`h-full rounded-full ${weight >= 0 ? "bg-[#1d5c8c]" : "bg-rose-400"}`}
+                        style={{ width: `${Math.min(100, (Math.abs(weight) / maxShap) * 100)}%` }}
                       />
                     </div>
-                    <span className="font-mono text-[11px] text-slate-600 w-10 text-right">
+                    <span className="w-12 text-right font-mono text-[11px] text-slate-600">
                       {weight > 0 ? `+${weight.toFixed(2)}` : weight.toFixed(2)}
                     </span>
                   </div>
@@ -303,77 +256,69 @@ export const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
           </div>
         </div>
 
-        {/* Right: Drop-off QR Code & Partner Action Card */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col items-center text-center">
-            <div className="flex items-center gap-2 mb-3">
-              <QrCode className="w-5 h-5 text-emerald-600" />
-              <h2 className="font-extrabold text-base text-slate-900">
-                Drop-Off Intake QR Code
-              </h2>
+        {/* QR and partner */}
+        <div className="lg:col-span-5">
+          <div className="flex flex-col items-center rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+            <div className="mb-2 flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-[#1d5c8c]" aria-hidden />
+              <h2 className="text-base font-extrabold">Drop-off QR code</h2>
             </div>
-            <p className="text-xs text-slate-500 mb-4 max-w-xs">
-              Show this QR code to the staff at the drop-off location. A scan confirms the true outcome to train the circular flywheel!
+            <p className="mb-5 max-w-xs text-xs leading-relaxed text-slate-500">
+              Show this at the drop-off point. The staff scan confirms what happened to your garment.
             </p>
 
-            {/* QR Canvas */}
-            <div className="p-3 bg-white rounded-2xl shadow-inner border border-slate-200 mb-3">
+            <div className="mb-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-inner">
               <canvas ref={qrCanvasRef} className="rounded-lg" />
             </div>
 
-            <div className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-md mb-4">
+            <div className="mb-5 rounded-md bg-[#f0f7fc] px-3 py-1 font-mono text-xs font-bold text-[#174e7c]">
               ID: {recommendations.qr_id}
             </div>
 
-            {/* Partner Details */}
             {selectedPathway.nearest_partner && (
-              <div className="w-full text-left p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100 mb-4 text-xs">
-                <div className="flex items-center gap-1.5 font-bold text-slate-800 mb-1">
-                  <Building className="w-4 h-4 text-emerald-700 shrink-0" />
+              <div className="mb-5 w-full rounded-2xl border border-[#d2e7f6] bg-[#f5faff] p-4 text-left text-xs">
+                <div className="mb-1 flex items-center gap-1.5 font-bold text-slate-800">
+                  <Building className="h-4 w-4 shrink-0 text-[#1d5c8c]" aria-hidden />
                   <span>{selectedPathway.nearest_partner.name}</span>
                 </div>
                 {selectedPathway.nearest_partner.address && (
-                  <p className="text-slate-600 mb-1 pl-5">
-                    {selectedPathway.nearest_partner.address}
-                  </p>
+                  <p className="mb-1 pl-5 text-slate-600">{selectedPathway.nearest_partner.address}</p>
                 )}
                 {selectedPathway.nearest_partner.contact_phone && (
-                  <p className="text-slate-500 pl-5">
-                    Phone: {selectedPathway.nearest_partner.contact_phone}
-                  </p>
+                  <p className="pl-5 text-slate-500">Phone: {selectedPathway.nearest_partner.contact_phone}</p>
                 )}
               </div>
             )}
 
-            {/* Flywheel Confirmation Simulation Button (Rule #7) */}
-            <div className="w-full pt-2 border-t border-slate-100">
+            <div className="w-full border-t border-slate-100 pt-5">
               {scanConfirmed ? (
-                <div className="p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center justify-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>{confirmMessage || "Intake Confirmed! Ground truth saved."}</span>
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-[#b9d9ef] bg-[#e6f2fb] p-3 text-xs font-semibold text-[#0b2a44]">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-[#1d5c8c]" aria-hidden />
+                  <span>{confirmMessage || "Intake confirmed. Thank you."}</span>
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={handleSimulateDropoffScan}
                   disabled={confirming}
-                  className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-xs flex items-center justify-center gap-2"
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-[#0b2a44] px-4 py-3 text-xs font-bold text-white transition-colors hover:bg-[#1d5c8c] disabled:opacity-60"
                 >
                   {confirming ? (
                     <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Recording Scan...</span>
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                      <span>Recording scan…</span>
                     </>
                   ) : (
                     <>
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                      <span>Simulate Partner Intake Scan (Flywheel Test)</span>
+                      <ShieldCheck className="h-4 w-4" aria-hidden />
+                      <span>Simulate partner intake scan</span>
+                      <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                     </>
                   )}
                 </button>
               )}
-              <p className="text-[10px] text-slate-400 mt-2">
-                *Only confirmed partner scans count as real model training data (Rule #7).
+              <p className="mt-3 text-[10px] text-slate-400">
+                Only confirmed partner scans count as real training data.
               </p>
             </div>
           </div>
@@ -382,3 +327,5 @@ export const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
     </div>
   );
 };
+
+export default RecommendationsSection;

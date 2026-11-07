@@ -1,34 +1,22 @@
 """Endpoint: POST /analyze
 
 Accepts multipart/form-data garment images and an optional care tag image.
-
-Perception priority order:
-  1. Local trained weights (if all three .pt files are present)
-  2. VLM API        (if VLM_API_KEY is set in .env)
-  3. Typed stub     (silent fallback, never crashes /analyze)
-
-Requirement #6: Grad-CAM is disabled (null) when source is "vlm".
+Orchestrates vision models (material, condition, damage) and tag OCR cross-checking.
 """
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
-from backend.app.ml.condition import analyze_condition, is_using_stub as condition_stub
-from backend.app.ml.damage import analyze_damage, is_using_stub as damage_stub
-from backend.app.ml.material import analyze_material, is_using_stub as material_stub
-from backend.app.ml.tag.clean import clean_tag_image
-from backend.app.ml.tag.detect import detect_tag
-from backend.app.ml.tag.ocr import extract_tag_text
-from backend.app.ml.tag.parse import parse_tag_and_crosscheck
-from backend.app.ml.vlm import vlm_analyze, vlm_available
-from backend.app.schemas import AnalyzeResponse
+from app.ml.condition import analyze_condition
+from app.ml.damage import analyze_damage
+from app.ml.material import analyze_material
+from app.ml.tag.clean import clean_tag_image
+from app.ml.tag.detect import detect_tag
+from app.ml.tag.ocr import extract_tag_text
+from app.ml.tag.parse import parse_tag_and_crosscheck
+from app.schemas import AnalyzeResponse
 
 router = APIRouter()
-
-
-def _local_models_ready() -> bool:
-    """Return True only if ALL local perception models are loaded (not stub)."""
-    return not (condition_stub() or damage_stub() or material_stub())
 
 
 @router.post(
@@ -36,11 +24,7 @@ def _local_models_ready() -> bool:
     response_model=AnalyzeResponse,
     status_code=status.HTTP_200_OK,
     summary="Analyze garment images and optional care label",
-    description=(
-        "Uploads garment photos and optional care tag photo to predict material, "
-        "condition, damage, and parsed tag details. "
-        "Uses local models if present, VLM API if configured, otherwise typed stub."
-    ),
+    description="Uploads garment photos and optional care tag photo to predict material, condition, damage, and parsed tag details.",
 )
 async def analyze_garment(
     garment_images: List[UploadFile] = File(
@@ -71,44 +55,20 @@ async def analyze_garment(
             detail="Uploaded garment images are empty.",
         )
 
-    # Read tag image bytes (optional)
-    tag_bytes: Optional[bytes] = None
-    if tag_image is not None and tag_image.filename:
-        raw = await tag_image.read()
-        if raw:
-            tag_bytes = raw
-
-    # ── Priority 1: Local trained models ─────────────────────────────────────
-    if _local_models_ready():
-        return await _run_local_pipeline(garment_bytes_list, tag_bytes)
-
-    # ── Priority 2: VLM API ───────────────────────────────────────────────────
-    if vlm_available():
-        return await _run_vlm_pipeline(garment_bytes_list, tag_bytes)
-
-    # ── Priority 3: Stub ──────────────────────────────────────────────────────
-    return await _run_local_pipeline(garment_bytes_list, tag_bytes)
-
-
-async def _run_local_pipeline(
-    garment_bytes_list: List[bytes],
-    tag_bytes: Optional[bytes],
-) -> AnalyzeResponse:
-    """Run the local model (or stub) perception pipeline."""
-    # 1. Vision models
+    # 1. Vision models (Stage 2)
     material_res = analyze_material(garment_bytes_list)
     condition_res = analyze_condition(garment_bytes_list)
     damage_res = analyze_damage(garment_bytes_list)
 
-    # Determine source label
-    source = "local" if _local_models_ready() else "stub"
-
-    # 2. Care tag pipeline — optional / graceful degradation
+    # 2. Care tag pipeline (Stage 1) - optional / graceful degradation (Rule #6)
     tag_ocr_lines = []
-    if tag_bytes is not None:
-        crop_coords = detect_tag(tag_bytes)
-        cleaned = clean_tag_image(tag_bytes)
-        tag_ocr_lines = extract_tag_text(cleaned)
+    if tag_image is not None and tag_image.filename:
+        tag_bytes = await tag_image.read()
+        if tag_bytes:
+            # Crop, clean, OCR
+            crop_coords = detect_tag(tag_bytes)
+            cleaned = clean_tag_image(tag_bytes)
+            tag_ocr_lines = extract_tag_text(cleaned)
 
     # 3. Parse tag and cross-check against vision material prediction
     tag_res, composition_status = parse_tag_and_crosscheck(
@@ -122,53 +82,4 @@ async def _run_local_pipeline(
         damage=damage_res,
         tag=tag_res,
         composition_status=composition_status,
-        source=source,
-        reasoning=None,
     )
-
-
-async def _run_vlm_pipeline(
-    garment_bytes_list: List[bytes],
-    tag_bytes: Optional[bytes],
-) -> AnalyzeResponse:
-    """Run the VLM perception pipeline. Never raises — falls back to stub on error."""
-    try:
-        response, source, reasoning = await vlm_analyze(garment_bytes_list, tag_bytes)
-
-        # If VLM itself fell back to stub internally, source == "stub"
-        # Tag pipeline: for VLM, the tag info comes directly from VLM output,
-        # but we still run OCR cross-check if a tag image was provided and VLM
-        # didn't read it (ocr_confidence == 0 and readable == False).
-        if (
-            tag_bytes is not None
-            and not response.tag.composition
-            and response.tag.ocr_confidence == 0.0
-        ):
-            # Attempt local OCR as supplement
-            try:
-                crop_coords = detect_tag(tag_bytes)
-                cleaned = clean_tag_image(tag_bytes)
-                tag_ocr_lines = extract_tag_text(cleaned)
-                if tag_ocr_lines:
-                    tag_res, composition_status = parse_tag_and_crosscheck(
-                        ocr_lines=tag_ocr_lines,
-                        vision_material=response.material.label,
-                    )
-                    response = response.model_copy(update={
-                        "tag": tag_res,
-                        "composition_status": composition_status,
-                    })
-            except Exception:
-                pass  # Keep VLM tag result
-
-        response = response.model_copy(update={"source": source, "reasoning": reasoning})
-        return response
-
-    except Exception as e:
-        # Should not reach here because vlm_analyze never raises, but be safe
-        import logging
-        logging.getLogger("ml.vlm").error(f"VLM pipeline unexpected error: {e}")
-        from backend.app.ml.vlm import _stub_response
-        stub = _stub_response()
-        stub = stub.model_copy(update={"source": "stub", "reasoning": None})
-        return stub

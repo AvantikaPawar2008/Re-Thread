@@ -11,16 +11,16 @@ from typing import Dict, List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from backend.app.config import settings
-from backend.app.db import get_db
-from backend.app.engine.explanation import generate_explanation
-from backend.app.engine.geography import find_nearest_partner
-from backend.app.engine.impact import calculate_impact
-from backend.app.engine.qr import generate_qr_id
-from backend.app.engine.ranking import rank_pathways
-from backend.app.engine.rules import evaluate_eligibility
-from backend.app.models_db import Recommendation
-from backend.app.schemas import (
+from app.config import settings
+from app.db import get_db
+from app.engine.explanation import generate_explanation
+from app.engine.geography import find_nearest_partner
+from app.engine.impact import calculate_impact
+from app.engine.qr import generate_qr_id
+from app.engine.ranking import rank_pathways
+from app.engine.rules import evaluate_eligibility
+from app.models_db import Recommendation
+from app.schemas import (
     RecommendRequest,
     RecommendResponse,
     RankedPathway,

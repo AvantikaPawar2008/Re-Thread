@@ -1,6 +1,6 @@
 """Tests for Database Models and Seeding."""
 
-from backend.app.models_db import Brand, Facility, ImpactFactor, PathwayRule
+from app.models_db import Brand, Facility, ImpactFactor, PathwayRule
 
 
 def test_seeded_brands(db_session):
