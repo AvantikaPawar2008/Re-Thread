@@ -7,11 +7,11 @@
 
 ---
 
-## 1. Executive Summary & Problem Statement
+## 1. Project Overview & Problem Statement
 
-The fashion and textile industry is one of the world's most resource-intensive sectors, responsible for over 10% of global carbon emissions and 20% of industrial wastewater. Globally, millions of tonnes of post-consumer garments are discarded into landfills every year because consumers lack accessible, transparent guidance on how to circularize their clothing.
+The fashion and textile industry is one of the world's most resource-intensive sectors, responsible for over 10% of global carbon emissions and 20% of industrial wastewater. Millions of tonnes of post-consumer garments are discarded into landfills annually because consumers lack accessible, transparent guidance on how to circularize their clothing.
 
-**RE-THREAD** is an end-to-end, AI-powered circular fashion intelligence platform designed to divert post-consumer textiles from landfills into their highest-value circular pathways:
+**RE-THREAD** is an end-to-end circular fashion intelligence platform designed to divert post-consumer garments from landfills into their highest-value circular pathways:
 
 1. **Reuse / Resell**: High-condition, branded, or lightly worn garments routed to thrift platforms and second-hand marketplaces.
 2. **Repair & Mending**: Garments with repairable defects ($< 20\%$ surface area damage) routed to local tailoring and alteration services.
@@ -25,35 +25,30 @@ The fashion and textile industry is one of the world's most resource-intensive s
 
 1. **Frozen API Contract**: The API schemas between the Next.js frontend and FastAPI backend are strictly defined and validated with Pydantic V2.
 2. **Honest Optical AI Limits**: Consumer smartphone RGB cameras cannot reliably resolve fine blend ratios (e.g. 60/40 vs 80/20 cotton-poly). The system classifies coarse fabric families (*natural*, *synthetic*, *blend*, or *uncertain*) and treats tag OCR as an optional secondary confirmation.
-3. **Pluggable Perception Hierarchy**: Perception currently leverages a Vision-Language Model (VLM) API (Google Gemini or OpenAI GPT-4o) for high-accuracy zero-shot multimodal diagnosis across material, condition, damage, and care tags in a single call. Local specialized weights (YOLOv8, ResNet-18) take precedence when available on disk (`weights/*.pt`), falling back to VLM if `VLM_API_KEY` is set, and finally to typed stubs.
+3. **Pluggable Perception Hierarchy**: Perception supports multimodal Vision-Language Models (Google Gemini / OpenAI) for comprehensive zero-shot visual diagnosis. Dedicated local models (fine-tuned YOLOv8 and ResNet-18) take precedence when `.pt` weights exist on disk (`weights/`), falling back to VLM if `VLM_API_KEY` is set, and finally to typed stubs.
 4. **Confidence Threshold Gating**: If visual prediction confidence falls below the calibrated threshold ($0.60$), the model returns `"uncertain"` rather than hallucinating.
 5. **Hybrid Decision Engine**: Hard deterministic business rules always execute first (Layer A), followed by scoring and ranking (Layer B), and geographical routing with LCA impact calculations (Layer C).
 6. **Startup Model Loading**: All heavy neural networks and VLM clients initialize once into memory at application startup via a singleton `ModelRegistry`.
-7. **Graceful Degradation**: If an image is blurry, a tag is missing, an API times out, or weights are absent, the platform never crashes—it gracefully degrades to typed fallbacks.
+7. **Graceful Degradation**: If an image is blurry, a tag is missing, or network requests time out, the platform never crashes—it gracefully degrades to typed fallbacks.
 8. **Verified Physical Verification Loop**: AI recommendations represent user intention; only when a physical drop-off partner scans the unique **QR Passport** does the transaction count as verified environmental data.
 9. **Localized Drop-off Infrastructure**: Pre-configured with a localized drop-off network of 15 verified facilities across municipal zones.
 
 ---
 
-## 3. Perception Architecture & Current Status
-
-> **Engineering Note on Perception:**
-> Real-world circular textile perception requires simultaneous material identification, wear grading, defect bounding, and care tag parsing. Because training and collecting high-volume domain-specific textile datasets takes significant time, **perception currently operates via a multimodal Vision-Language Model (VLM) API** with a strict JSON system prompt and zero temperature.
->
-> Dedicated local models (fine-tuned YOLOv8 for defect segmentation and care tag detection, and dual ResNet-18 for wear and fiber classification) are fully implemented and integrated. The system checks for local weights first, automatically routing to local execution when `.pt` weights exist in `weights/`.
+## 3. System Architecture & Information Flow
 
 ```
 [Garment & Care Tag Photos]
              │
-     [Priority Router]
-             ├─► 1. Local Models (if weights/*.pt exist on disk)
+     [Perception Router]
+             ├─► 1. Local Models (when weights/*.pt exist on disk)
              │      ├── YOLOv8 Defect Segmentation + YOLOv8 Tag Detection
              │      ├── ResNet-18 Material & Condition Classifiers + Grad-CAM Heatmaps
              │      └── OpenCV Deskew + PaddleOCR + RapidFuzz
              │
              ├─► 2. VLM Perception API (Active when VLM_API_KEY is configured in .env)
-             │      ├── Single multimodal call (Google Gemini 2.0 / OpenAI GPT-4o)
-             │      ├── Strict Pydantic JSON validation + 1-attempt retry + 20s timeout
+             │      ├── Single multimodal call (Google Gemini / OpenAI)
+             │      ├── Strict Pydantic JSON validation + 1-attempt retry + 35s timeout
              │      ├── Material, condition, damage area %, defect boxes & tag composition
              │      └── One-sentence visual reasoning explanations returned to frontend
              │
@@ -82,13 +77,13 @@ The fashion and textile industry is one of the world's most resource-intensive s
 
 | Module | Component | Description |
 | :--- | :--- | :--- |
-| **Backend & Database** | FastAPI + SQLAlchemy | RESTful endpoints (`/health`, `/analyze`, `/recommend`, `/outcome/confirm`), SQLite/PostgreSQL support, Alembic schema migrations, and seeded drop-off facilities. |
+| **Backend & Database** | FastAPI + SQLAlchemy | RESTful endpoints (`/health`, `/health/models`, `/analyze`, `/recommend`, `/outcome/confirm`), SQLite/PostgreSQL support, Alembic schema migrations, and seeded drop-off facilities. |
 | **Frontend Web App** | Next.js 16 (React 19) | Mobile-first upload interface (3 garment photo slots + 1 tag slot), AI diagnosis cards, confidence score meters, uncertain state banners, interactive maps, and impact analytics. |
-| **Damage Segmentation** | YOLOv8-seg | Neural defect detection identifying tears, holes, and stains with precise bounding boxes and garment surface area percentage calculations. |
+| **Damage Segmentation** | YOLOv8-seg | Neural defect detection identifying tears, holes, and stains with bounding boxes and garment surface area percentage calculations. |
 | **Wear & Fabric Classifiers** | Dual ResNet-18 | Wear classification (*new*, *gently_used*, *worn*, *heavily_worn*) and fabric family identification (*natural*, *synthetic*, *blend*) trained with garment-level grouping to prevent multi-angle data leakage. |
-| **Visual Explainability** | PyTorch Grad-CAM | Convolutional activation heatmaps (`layer4[-1]`) superimposed over garment photos and rendered in the UI to explain what visual textures guided the model's prediction. |
-| **Care Tag Pipeline** | YOLOv8 + OpenCV + OCR | Tag localization, minimum-area-rectangle deskewing, CLAHE contrast enhancement, Otsu binarization, PaddleOCR line extraction, RapidFuzz brand alias matching, and 10-fiber vocabulary validation. |
-| **Decision Engine** | Layered Hybrid Ranker | Layer A SQL constraints, Layer B pluggable Ranker interface (`WeightedFormulaRanker` and `XGBoostRanker`) with real `shap.TreeExplainer` feature attribution, and Layer C Haversine geo-routing. |
+| **Visual Explainability** | PyTorch Grad-CAM & SHAP | Grad-CAM convolutional heatmaps (`layer4[-1]`) for visual attention, and real `shap.TreeExplainer` feature attribution on XGBoost ranking decisions. |
+| **Care Tag Pipeline** | YOLOv8 + OpenCV + OCR | Tag localization, minimum-area-rectangle deskewing, CLAHE contrast enhancement, Otsu binarization, PaddleOCR line extraction, RapidFuzz brand matching, and fiber vocabulary validation. |
+| **Decision Engine** | Layered Hybrid Ranker | Layer A SQL constraints, Layer B pluggable Ranker interface (`WeightedFormulaRanker` and `XGBoostRanker`), and Layer C Haversine geo-routing with cited WRAP/EMF LCA factors. |
 | **Lifecycle Verification** | QR Intake Portal | Generates cryptographic QR tracking passports and provides a partner-facing scan portal to confirm physical drop-offs and certify real-world circular outcomes. |
 
 ---
@@ -99,253 +94,125 @@ The fashion and textile industry is one of the world's most resource-intensive s
 - **Framework**: FastAPI (Python 3.11/3.12), Pydantic V2, Uvicorn (ASGI)
 - **Database & ORM**: SQLite (zero-config local dev) / PostgreSQL 16 via SQLAlchemy 2.0 & Alembic
 - **Deep Learning**: PyTorch 2.x, Torchvision, Ultralytics YOLOv8 (segmentation & detection)
-- **Visual Explainability**: `pytorch-grad-cam` (Grad-CAM on ResNet-18 `layer4[-1]`)
-- **Ranking & Attribution**: XGBoost Regressor, SHAP (`shap.TreeExplainer`)
+- **Visual Explainability**: `pytorch-grad-cam` (Grad-CAM on ResNet-18 `layer4[-1]`), SHAP (`shap.TreeExplainer`)
+- **Ranking & Analytics**: XGBoost Regressor, Scikit-learn
 - **Computer Vision & OCR**: OpenCV (CLAHE, minAreaRect deskew, Otsu), Pillow, PaddleOCR, RapidFuzz
-- **Testing**: Pytest, Pytest-Asyncio, HTTPX TestClient (39 automated tests)
+- **Multimodal VLM**: Google Gemini API (`gemini-3-flash-preview` / `gemini-3.6-flash`), OpenAI API (`gpt-4o`)
+- **Testing**: Pytest, Pytest-Asyncio, HTTPX TestClient
 
 ### Frontend
 - **Framework**: Next.js 16 (React 19, Turbopack, App Router)
 - **Styling**: Tailwind CSS 4, Lucide React Icons
-- **Language**: TypeScript (strict mode, zero build errors)
+- **Language**: TypeScript (strict mode)
 
 ---
 
 ## 6. Repository Layout
 
-```text
-re-thread/
-├── docs/
-│   └── PROJECT.md                  # Comprehensive project specification
-├── frontend/                       # Next.js 16 web application
+```
+rethread/
+├── backend/                        # FastAPI Application:
+│   ├── alembic/                    # Database migrations
+│   ├── app/
+│   │   ├── api/                    # API Endpoints:
+│   │   │   ├── analyze.py            # POST /analyze (Vision & Tag pipeline)
+│   │   │   ├── recommend.py          # POST /recommend (Decision Engine)
+│   │   │   └── outcome.py            # POST /outcome/confirm (Intake verification)
+│   │   ├── config.py               # Pydantic Settings (.env configuration)
+│   │   ├── db.py                   # SQLAlchemy engine & session factory
+│   │   ├── main.py                 # FastAPI application & lifespan
+│   │   ├── models_db.py            # Database tables
+│   │   ├── schemas.py              # Pydantic request/response schemas
+│   │   ├── ml/                     # ML Inference Modules:
+│   │   │   ├── condition.py          # ResNet-18 wear classifier
+│   │   │   ├── damage.py             # YOLOv8 damage segmentation
+│   │   │   ├── gradcam.py            # Grad-CAM heatmap generator
+│   │   │   ├── loader.py             # Startup ModelRegistry
+│   │   │   ├── material.py           # ResNet-18 material classifier
+│   │   │   ├── vlm.py                # Multimodal VLM perception client
+│   │   │   └── tag/                  # Tag OCR pipeline
+│   │   ├── engine/                 # Decision Engine:
+│   │   │   ├── explanation.py        # Plain-language explanation builder
+│   │   │   ├── geography.py          # Haversine distance ranking
+│   │   │   ├── impact.py             # Cited LCA impact calculator
+│   │   │   ├── qr.py                 # Cryptographic QR generator
+│   │   │   ├── ranking.py            # BaseRanker interface & Formula ranker
+│   │   │   ├── rules.py              # Layer A SQL eligibility constraints
+│   │   │   └── xgb_ranker.py         # Layer B XGBoost ranker + SHAP
+│   │   └── seed/                   # Seed CSVs (facilities, brands, rules, impact)
+│   ├── tests/                      # Automated test suite (60 unit & integration tests)
+│   └── requirements.txt            # Python dependencies
+├── frontend/                       # Next.js Application:
 │   ├── src/
-│   │   ├── app/                    # App Router pages (Home, layout, styles)
-│   │   ├── components/             # Reusable UI modules:
-│   │   │   ├── Navbar.tsx            # Header with status indicator and navigation tabs
-│   │   │   ├── UploadSection.tsx     # 3 garment photo slots + 1 care tag slot
-│   │   │   ├── AnalysisResultsSection.tsx # AI diagnosis cards with Grad-CAM toggles
-│   │   │   ├── RecommendationsSection.tsx # Ranked circular pathways & QR passport
-│   │   │   ├── PartnerScanPage.tsx   # Drop-off partner QR scanner & intake form
-│   │   │   ├── ImpactDashboard.tsx   # Municipal ward impact metrics
-│   │   │   └── FacilitiesView.tsx    # Interactive drop-off facility directory
-│   │   ├── lib/api.ts              # Type-safe API client
-│   │   └── types/index.ts          # TypeScript interfaces matching API schemas
+│   │   ├── app/                    # Next.js App Router (page.tsx, layout.tsx)
+│   │   ├── components/             # React UI components
+│   │   ├── lib/                    # API client (api.ts)
+│   │   └── types/                  # TypeScript interface contracts
 │   ├── package.json
 │   └── tsconfig.json
-├── backend/
-│   ├── alembic/                    # Database migration scripts
-│   ├── app/
-│   │   ├── main.py                 # FastAPI application, lifespan handler & latency middleware
-│   │   ├── config.py               # Pydantic BaseSettings & environment variables
-│   │   ├── db.py                   # SQLAlchemy engine and session dependency
-│   │   ├── models_db.py            # ORM models (Brand, Facility, PathwayRule, ImpactFactor, Recommendation, Outcome)
-│   │   ├── schemas.py              # Pydantic contract schemas
-│   │   ├── api/                    # API endpoints:
-│   │   │   ├── analyze.py            # POST /analyze (multipart upload & CV pipeline)
-│   │   │   ├── recommend.py          # POST /recommend (hybrid decision engine)
-│   │   │   └── outcome.py            # POST /outcome/confirm (partner intake loop)
-│   │   ├── ml/                     # Machine learning inference modules:
-│   │   │   ├── loader.py             # Startup singleton model manager
-│   │   │   ├── damage.py             # YOLOv8 defect segmentation
-│   │   │   ├── condition.py          # ResNet-18 wear classifier with Grad-CAM
-│   │   │   ├── material.py           # ResNet-18 coarse fabric classifier with Grad-CAM
-│   │   │   ├── gradcam.py            # PyTorch Grad-CAM heatmap generator
-│   │   │   └── tag/                  # Care tag sub-pipeline:
-│   │   │       ├── detect.py           # YOLOv8 tag detector & cropper
-│   │   │       ├── clean.py            # OpenCV deskew, CLAHE & binarization
-│   │   │       ├── ocr.py              # PaddleOCR wrapper
-│   │   │       └── parse.py            # RapidFuzz brand matching & fiber vocab parser
-│   │   ├── engine/                 # Circular decision engine:
-│   │   │   ├── rules.py              # Layer A: Hard SQL eligibility constraints
-│   │   │   ├── ranking.py            # Layer B: Ranker interface & dispatch
-│   │   │   ├── xgb_ranker.py         # Layer B: XGBoost ranker with real SHAP TreeExplainer
-│   │   │   ├── geography.py          # Layer C: Haversine distance calculator
-│   │   │   ├── impact.py             # Layer C: Cited WRAP/EMF LCA savings calculator
-│   │   │   ├── explanation.py        # Plain-language natural explanation generator
-│   │   │   └── qr.py                 # Cryptographic QR code image generator
-│   │   └── seed/                   # Seed data:
-│   │       ├── brands.csv            # 8 brands with take-back policies
-│   │       ├── facilities.csv        # 15 regional municipal facilities
-│   │       ├── impact_factors.csv    # Cited LCA water/CO2 factors
-│   │       ├── rules.csv             # 5 pathway rules
-│   │       └── seed_data.py          # Seed loader script
-│   ├── tests/                      # Automated pytest suite (39 tests):
-│   │   ├── conftest.py               # Shared in-memory test database fixture
-│   │   ├── test_health.py            # Health probe tests
-│   │   ├── test_analyze.py           # Multipart upload tests
-│   │   ├── test_recommend.py         # Recommendation endpoint tests
-│   │   ├── test_outcome.py           # QR intake confirmation tests
-│   │   ├── test_decision_engine.py   # SQL rules, rankings, and edge cases
-│   │   ├── test_damage.py            # Damage detection tests
-│   │   ├── test_vision_models.py     # ResNet-18 wear/material tests
-│   │   ├── test_tag_pipeline.py      # Deskew, OCR, fiber vocab, and brand tests
-│   │   ├── test_e2e_pipeline.py      # End-to-end lifecycle & latency checks
-│   │   └── test_db_and_seed.py       # Seed data validation
-│   └── requirements.txt            # Python dependencies
-├── ml/                             # Training Scripts & Notebooks:
-│   ├── train_damage_yolov8.ipynb   # YOLOv8 segmentation training
-│   ├── train_resnet18_classifier.ipynb # ResNet-18 with GroupShuffleSplit
-│   └── train_tag_yolov8.ipynb      # YOLOv8 care tag detection training
-├── weights/                        # Model weights directory (damage.pt, condition.pt, etc.)
-├── docker-compose.yml              # Optional PostgreSQL container configuration
-└── README.md                       # Main project documentation
+├── ml/                             # Offline model training scripts & notebooks
+├── samples/                        # Sample garment test images
+├── scripts/                        # Utility scripts (try_vlm.py CLI diagnostic)
+├── weights/                        # Model weights directory (optional local .pt files)
+├── .env.example                    # Environment variables template
+├── docker-compose.yml              # Optional container deployment
+└── README.md                       # Project documentation
 ```
 
 ---
 
-## 7. Quickstart Guide: Local Setup & Running
+## 7. Getting Started
 
 ### Prerequisites
 - Python 3.11+
 - Node.js 18+ and npm
-- Git
 
-### Step 1: Set Up and Run the Backend
-
+### Backend Setup
 ```powershell
-# Navigate to the project root
-cd "c:\ai project\rethread"
-
-# Install backend dependencies
+# 1. Install dependencies
 pip install -r backend/requirements.txt
 
-# Configure environment variables (VLM & Database)
+# 2. Configure environment (copy template and optionally add VLM_API_KEY)
 cp .env.example .env
-# Edit .env to set your VLM API Key (Google Gemini or OpenAI):
-#   VLM_PROVIDER=google
-#   VLM_API_KEY=your_gemini_api_key_here
-#   VLM_MODEL=gemini-2.0-flash
 
-# Seed the database with drop-off facilities, brands, and LCA impact factors
+# 3. Seed database (15 facilities, 8 partner brands, LCA impact factors)
 python -m backend.app.seed.seed_data
 
-# Start the FastAPI server (Port 8000)
+# 4. Start the backend API server (Port 8000)
 python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+- **API Documentation (Swagger):** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **Model Health Status:** [http://127.0.0.1:8000/health/models](http://127.0.0.1:8000/health/models)
 
-- **Interactive API Documentation (Swagger UI):** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **ReDoc Documentation:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
-- **Health Check Endpoint:** [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
-- **Model Registry & VLM Health:** [http://127.0.0.1:8000/health/models](http://127.0.0.1:8000/health/models)
-
-### CLI Diagnostic Tool: `try_vlm.py`
-
-Test perception on any single image from your terminal without opening the browser:
-
+### Frontend Setup
 ```powershell
-# Run single-image diagnosis via configured VLM
-python scripts/try_vlm.py path/to/garment.jpg
-
-# Or pass both garment image and close-up care tag image
-python scripts/try_vlm.py path/to/garment.jpg path/to/care_tag.jpg
-```
-
-### Step 2: Set Up and Run the Frontend
-
-```powershell
-# In a separate terminal window:
-cd "c:\ai project\rethread\frontend"
-
-# Install frontend dependencies
+# In a separate terminal:
+cd frontend
 npm install
-
-# Start the Next.js development server (Port 3000)
 npm run dev
 ```
-
 - **Web Application:** [http://localhost:3000](http://localhost:3000)
 
----
-
-## 8. Running the Automated Test Suite
-
-Run the full pytest suite across all 60 tests:
-
+### Testing
+Run the automated test suite (60 unit & integration tests covering VLM perception, decision engine, OCR, and API contracts):
 ```powershell
 python -m pytest backend/tests -v
 ```
 
-**Test Coverage Summary:**
-- **`test_vlm.py` (15 tests)**: Unit tests with mocked VLM client covering valid JSON, markdown code fence stripping, retry on invalid JSON, fallback to stub on double-failure, timeout handling (20s), missing API key, confidence threshold gating, tag percentage sum verification ($\sim 100\%$), and vision-tag contradiction detection.
-- **`test_health.py`**: Health probe and model registry status verification (`/health` and `/health/models`).
-- **`test_e2e_pipeline.py`**: Full lifecycle flow from multipart photo upload $\rightarrow$ `/analyze` $\rightarrow$ `/recommend` $\rightarrow$ `/outcome/confirm`, latency checks ($< 100\text{ms}$ health, $< 350\text{ms}$ recommendation), and Ranker interface validation.
-- **`test_vision_models.py`**: Validates ResNet-18 condition and coarse material inference, confidence threshold gating ($0.60$), and stub fallbacks.
-- **`test_damage.py`**: Validates YOLOv8 defect detection, surface area percentage calculation, and bounding boxes.
-- **`test_tag_pipeline.py`**: Validates image deskewing, CLAHE binarization, regex fiber extraction against fixed vocabulary, RapidFuzz brand matching with aliases, $\sim 100\%$ check, and vision cross-check.
-- **`test_decision_engine.py`**: Validates Layer A SQL rules, distance weighting, cited LCA savings, close-score transparent explanations, and SHAP feature attributions.
-
 ---
 
-## 9. Walkthrough Demo: 3 Sample Garments
+## 8. API Contract Overview
 
-You can test these 3 scenarios directly in the web app ([http://localhost:3000](http://localhost:3000)) or via `curl`:
-
-### Sample 1: Repair Pathway (Mendable Torn Seam)
-- **Garment Profile:** Navy Cotton Chino Trousers.
-- **Diagnostic Findings:**
-  - Material: `natural` (Cotton, confidence 0.88).
-  - Condition: `gently_used` (confidence 0.82).
-  - Damage: Detected, area = 4.2% (torn pocket seam, well below 20% limit).
-  - Brand: Tailored / Unbranded.
-- **Decision Engine Output:**
-  - **Top Recommended Pathway:** `repair` (Suitability Score: 0.84).
-  - **Plain-Language Explanation:** *"Visible damage is limited to 4.2% of the garment, well within the 20% repairability threshold. The fabric condition is gently used, making professional mending the most resource-efficient choice."*
-  - **SHAP Feature Attributions:** `damage_percent: +0.28`, `condition: +0.20`, `material: +0.12`.
-  - **Nearest Partner:** FC Road Master Tailors & Alterations ($0.8\text{ km}$ away).
-  - **LCA Environmental Savings:** 3,120 Litres of Water · 9.4 kg $\text{CO}_2$ avoided.
-
-### Sample 2: Reuse / Resell Pathway (Branded, Pristine Garment)
-- **Garment Profile:** Levi's Denim Trucker Jacket.
-- **Diagnostic Findings:**
-  - Material: `natural` (100% Cotton denim, confidence 0.94).
-  - Condition: `new` / `gently_used` (confidence 0.91).
-  - Damage: None detected (0% area).
-  - Tag OCR: Brand `"Levi's"`, Composition `{"cotton": 100.0}` (`agrees_with_vision: true`).
-- **Decision Engine Output:**
-  - **Top Recommended Pathway:** `reuse_resell` / `brand_takeback` (Suitability Score: 0.92).
-  - **Plain-Language Explanation:** *"Garment is in excellent, undamaged condition with recognized brand value. Resale or brand trade-in delivers the highest circular utility and rewards the owner."*
-  - **SHAP Feature Attributions:** `condition: +0.35`, `brand: +0.25`, `damage_percent: 0.0`.
-  - **Nearest Partner:** SwapStyle Pune Camp ($1.4\text{ km}$) or Levi's Pavillion Store.
-  - **LCA Environmental Savings:** 4,800 Litres of Water · 14.8 kg $\text{CO}_2$ avoided.
-
-### Sample 3: Recycle Pathway (Unrepairable Synthetic Wear)
-- **Garment Profile:** Heavily Worn Polyester Sports Jersey.
-- **Diagnostic Findings:**
-  - Material: `synthetic` (Polyester, confidence 0.85).
-  - Condition: `heavily_worn` (confidence 0.89).
-  - Damage: Detected, area = 28.5% (large burn hole and shredding, exceeds repair limit).
-  - Tag OCR: Unreadable / Cut.
-- **Decision Engine Output:**
-  - **Top Recommended Pathway:** `recycle` (Suitability Score: 0.88).
-  - **Plain-Language Explanation:** *"Garment exhibits severe structural wear and 28.5% damage exceeding the repair threshold. Direct mechanical fiber shredding and chemical recycling prevents landfill disposal."*
-  - **SHAP Feature Attributions:** `damage_percent: +0.38`, `condition: -0.25`.
-  - **Nearest Partner:** EcoReclaim Pune - FC Road ($1.2\text{ km}$).
-  - **LCA Environmental Savings:** 850 Litres of Water · 5.2 kg $\text{CO}_2$ avoided.
-
----
-
-## 10. Partner QR Intake & Outcome Verification Loop
-
-1. Complete a recommendation in the web app to generate the circular QR passport (e.g. `qr_4b7f92e10c`).
-2. Navigate to the **Partner Scan** tab in the top navigation.
-3. Select an intake facility from the regional partner locations.
-4. Enter or simulate-scan the QR ID and select the verified physical outcome (`reuse_resell`, `repair`, `donate`, `recycle`, or `brand_takeback`).
-5. Click **Record Real Circular Outcome**.
-6. The system commits the transaction to the database via `POST /outcome/confirm` and issues an official Circular Verification Certificate.
-
----
-
-## 11. API Contract Examples
-
-### 1. Analyze Garment
+### `POST /analyze` (Multipart Form-Data)
+Uploads garment photographs and optional care tag photo. Returns material classification, wear condition, defect percentage, and parsed care label.
 ```bash
 curl -X POST http://127.0.0.1:8000/analyze \
   -F "garment_images=@garment_front.jpg" \
-  -F "garment_images=@garment_texture.jpg" \
   -F "tag_image=@care_tag.jpg"
 ```
 
-### 2. Generate Recommendations
+### `POST /recommend` (JSON Body)
+Evaluates eligibility rules, scores pathways using XGBoost + SHAP, ranks by geographical proximity to facilities, and generates a QR tracking passport.
 ```bash
 curl -X POST http://127.0.0.1:8000/recommend \
   -H "Content-Type: application/json" \
@@ -363,23 +230,23 @@ curl -X POST http://127.0.0.1:8000/recommend \
   }'
 ```
 
-### 3. Confirm Lifecycle Outcome
+### `POST /outcome/confirm` (JSON Body)
+Partner intake portal endpoint to confirm physical drop-off and certify real-world circular outcomes.
 ```bash
 curl -X POST http://127.0.0.1:8000/outcome/confirm \
   -H "Content-Type: application/json" \
   -d '{
     "qr_id": "qr_4b7f92e10c",
     "partner_facility_id": 1,
-    "confirmed_pathway": "repair",
-    "notes": "Seam mending completed at FC Road hub"
+    "confirmed_pathway": "repair"
   }'
 ```
 
 ---
 
-## 12. Verified Drop-off Network Directory
+## 9. Verified Drop-off Network Directory
 
-The platform includes 15 calibrated drop-off locations:
+The platform includes 15 calibrated municipal drop-off facilities:
 
 | ID | Facility Name | Neighborhood | Coordinates | Supported Pathways |
 | :-: | :--- | :--- | :-: | :--- |
@@ -401,6 +268,6 @@ The platform includes 15 calibrated drop-off locations:
 
 ---
 
-## 13. License
+## 10. License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

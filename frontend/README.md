@@ -4,25 +4,19 @@
 
 This directory houses the web user interface for **RE-THREAD**.
 
-## Features Implemented
+## Features
 
-- **Multi-slot Photo Upload**: 3 garment photo slots (front, back, fabric detail) + 1 care label photo slot.
-- **AI Vision Analysis**: Displays material classification, wear condition, defect percentage, and parsed care tag.
-- **Source Badges**:
-  - `AI vision analysis (estimate)` badge when running via VLM perception API.
-  - `Demo mode` badge when operating on fallback stubs.
-- **Defect Area Estimation**: Labeled clearly as estimated when powered by VLM analysis.
-- **AI Visual Reasoning**: Shows one-sentence visual evidence statements per category directly on the analysis cards.
-- **Explainability**: PyTorch Grad-CAM visual attention overlays (when running with local ResNet-18 weights) and SHAP feature attribution waterfall.
-- **Circular Recommendations**: Filtered by municipal eligibility constraints, scored by XGBoost / weighted formula, and ordered by proximity to 15 regional Pune facilities.
-- **Partner Intake QR Portal**: Partner facility scanner interface for physical drop-off verification.
+- **Multi-angle Photo Upload**: Dedicated slots for garment views and care label photos.
+- **AI Diagnostics**: Real-time display of material family, wear condition, defect area, and care tag parsing.
+- **Explainability**: Convolutional visual attention overlays and SHAP feature attribution rankings.
+- **Decision Engine Recommendations**: Pathway suitability scoring (Reuse, Repair, Donate, Recycle, Brand Take-Back) with distance calculations to 15 municipal facilities.
+- **Partner Intake Portal**: Verification scanner interface to confirm physical drop-offs via QR tracking passports.
 
 ## Running the Frontend
 
 ```powershell
-# From the frontend directory:
 npm install
 npm run dev
 ```
 
-Application runs at [http://localhost:3000](http://localhost:3000). Ensure the backend is running at [http://127.0.0.1:8000](http://127.0.0.1:8000).
+Runs on [http://localhost:3000](http://localhost:3000). Ensure the backend server is running on [http://127.0.0.1:8000](http://127.0.0.1:8000).
