@@ -2,6 +2,11 @@
 # RE-THREAD: Git Ignore Rules (Clean Prototype Review)
 # =============================================================================
 
+# ── Internal Specifications & Notes ──────────────────────────────────────────
+project.md
+PROJECT.md
+docs/PROJECT.md
+
 # ── Secrets & Environment Variables (NEVER commit credentials) ───────────────
 .env
 .env*.local
