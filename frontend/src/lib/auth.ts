@@ -27,6 +27,25 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const TOKEN_KEY = "rethread_auth_token";
 const USER_KEY = "rethread_auth_user";
 
+async function fetchWithFallback(path: string, init?: RequestInit): Promise<Response> {
+  const base = API_BASE_URL.replace(/\/$/, "");
+  const primary = `${base}${path}`;
+  const alternateBase = base.includes("localhost")
+    ? base.replace("localhost", "127.0.0.1")
+    : base.replace("127.0.0.1", "localhost");
+  const alternate = `${alternateBase}${path}`;
+
+  try {
+    return await fetch(primary, init);
+  } catch (err: unknown) {
+    const isFetchFail = err instanceof Error && err.message.toLowerCase().includes("failed to fetch");
+    if (isFetchFail) {
+      return await fetch(alternate, init);
+    }
+    throw err;
+  }
+}
+
 export function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
@@ -83,7 +102,7 @@ export function logoutUser(): void {
 }
 
 export async function loginUser(email: string, password: string, remember: boolean = true): Promise<User> {
-  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+  const res = await fetchWithFallback("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
@@ -112,7 +131,7 @@ export async function registerUser(data: {
   password: string;
   city?: string;
 }): Promise<User> {
-  const res = await fetch(`${API_BASE_URL}/auth/register`, {
+  const res = await fetchWithFallback("/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -151,7 +170,7 @@ export async function updateProfile(patch: {
     throw new Error("You must be logged in to update your profile.");
   }
 
-  const res = await fetch(`${API_BASE_URL}/auth/me`, {
+  const res = await fetchWithFallback("/auth/me", {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -188,7 +207,7 @@ export async function fetchMe(): Promise<User | null> {
   if (!token) return null;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+    const res = await fetchWithFallback("/auth/me", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

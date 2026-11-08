@@ -10,8 +10,27 @@ import {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+async function fetchWithFallback(path: string, init?: RequestInit): Promise<Response> {
+  const base = API_BASE_URL.replace(/\/$/, "");
+  const primary = `${base}${path}`;
+  const alternateBase = base.includes("localhost")
+    ? base.replace("localhost", "127.0.0.1")
+    : base.replace("127.0.0.1", "localhost");
+  const alternate = `${alternateBase}${path}`;
+
+  try {
+    return await fetch(primary, init);
+  } catch (err: unknown) {
+    const isFetchFail = err instanceof Error && err.message.toLowerCase().includes("failed to fetch");
+    if (isFetchFail) {
+      return await fetch(alternate, init);
+    }
+    throw err;
+  }
+}
+
 export async function checkBackendHealth(): Promise<HealthResponse> {
-  const res = await fetch(`${API_BASE_URL}/health`, {
+  const res = await fetchWithFallback("/health", {
     method: "GET",
     headers: { "Accept": "application/json" },
   });
@@ -22,7 +41,7 @@ export async function checkBackendHealth(): Promise<HealthResponse> {
 }
 
 export async function analyzeGarment(formData: FormData): Promise<AnalyzeResponse> {
-  const res = await fetch(`${API_BASE_URL}/analyze`, {
+  const res = await fetchWithFallback("/analyze", {
     method: "POST",
     body: formData,
   });
@@ -55,7 +74,7 @@ export async function getRecommendations(
     garment_weight_kg: garmentWeightKg,
   };
 
-  const res = await fetch(`${API_BASE_URL}/recommend`, {
+  const res = await fetchWithFallback("/recommend", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -92,7 +111,7 @@ export async function confirmOutcome(
     notes: notes || "Scanned via drop-off confirmation interface",
   };
 
-  const res = await fetch(`${API_BASE_URL}/outcome/confirm`, {
+  const res = await fetchWithFallback("/outcome/confirm", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -122,7 +141,7 @@ export async function identifyFabric(file: File): Promise<any> {
   formData.append("garment_images", file);
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/analyze`, {
+    const res = await fetchWithFallback("/api/analyze", {
       method: "POST",
       body: formData,
     });
@@ -143,7 +162,7 @@ export async function identifyFabric(file: File): Promise<any> {
     // try fallback
   }
 
-  const res = await fetch(`${API_BASE_URL}/analyze`, {
+  const res = await fetchWithFallback("/analyze", {
     method: "POST",
     body: formData,
   });
@@ -163,4 +182,3 @@ export async function identifyFabric(file: File): Promise<any> {
   }
   return data;
 }
-
