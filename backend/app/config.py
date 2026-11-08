@@ -1,6 +1,6 @@
 """Application configuration using Pydantic Settings."""
 
-from typing import List
+from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     DEFAULT_GARMENT_WEIGHT_KG: float = 0.30
     RANKER_TYPE: str = "xgboost"  # Options: 'xgboost' (Phase 7) or 'formula' (Phase 3)
 
+    # VLM (Vision-Language Model) Configuration
+    # Provider: "google" (Gemini) or "openai" (GPT-4o / GPT-4-vision)
+    VLM_PROVIDER: str = "google"
+    VLM_API_KEY: Optional[str] = None
+    VLM_MODEL: str = "gemini-3-flash-preview"
+    VLM_TIMEOUT_SECONDS: float = 35.0
+
     # Default Pune coordinates (FC Road / Central Pune)
     DEFAULT_PUNE_LATITUDE: float = 18.5204
     DEFAULT_PUNE_LONGITUDE: float = 73.8567
@@ -31,7 +38,12 @@ class Settings(BaseSettings):
         "*",
     ]
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+    model_config = SettingsConfigDict(
+        env_file=[".env", "../.env"],
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=True,
+    )
 
 
 settings = Settings()

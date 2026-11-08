@@ -90,10 +90,10 @@ export default function AuthMenu({ variant = "desktop" }: { variant?: "desktop" 
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`Account menu for ${user.name}`}
+        aria-label={`Account menu for ${user.name || user.full_name}`}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(135deg,#2B98D0,#2F7BB5)] text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2B98D0]"
       >
-        {initials(user.name)}
+        {initials(user.name || user.full_name)}
       </button>
       {open && (
         <div
@@ -101,7 +101,7 @@ export default function AuthMenu({ variant = "desktop" }: { variant?: "desktop" 
           className="absolute right-0 top-full z-50 mt-2 w-60 rounded-2xl border border-[#E9EEF3] bg-white p-2 shadow-[0_20px_40px_-20px_rgba(31,95,139,0.4)]"
         >
           <div className="px-3 py-2">
-            <p className="truncate text-sm font-semibold text-[#12233B]">{user.name}</p>
+            <p className="truncate text-sm font-semibold text-[#12233B]">{user.name || user.full_name}</p>
             <p className="truncate text-xs text-[#7A8896]">{user.email}</p>
           </div>
           <Link

@@ -3,6 +3,7 @@
 from contextlib import asynccontextmanager
 import logging
 import time
+from typing import Any, Dict
 
 from fastapi import FastAPI, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -105,6 +106,18 @@ def health_check(db: Session = Depends(get_db)) -> HealthResponse:
         version=settings.VERSION,
         database=db_status,
     )
+
+
+@app.get(
+    "/health/models",
+    response_model=Dict[str, Any],
+    status_code=status.HTTP_200_OK,
+    tags=["System"],
+    summary="Model registry health — which components are active",
+)
+def health_models() -> Dict[str, Any]:
+    """Returns the status of every ML component and the active perception provider."""
+    return model_registry.get_health_detail()
 
 
 # Register API Routers (root level, plus the /api/v1 prefix)

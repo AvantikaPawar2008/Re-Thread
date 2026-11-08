@@ -14,8 +14,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
+!frontend/src/lib/
 parts/
 sdist/
 var/
@@ -52,10 +53,15 @@ weights/*.pth
 weights/*.onnx
 weights/*.joblib
 weights/*.pkl
+# Temporary and backup files
 _my-auth-backup/
-frontend/src/components/RecommendationsSection.tsx.bak
+*.bak
 frontend/tsconfig.tsbuildinfo
-_my-auth-backup/
-_my-auth-backup/
-frontend/src/components/RecommendationsSection.tsx.bak
-frontend/tsconfig.tsbuildinfo
+
+# Environment & Secrets
+.env
+.env.*
+.env.local
+.env.*.local
+!.env.example
+.env.*.local

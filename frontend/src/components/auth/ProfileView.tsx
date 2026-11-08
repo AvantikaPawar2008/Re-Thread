@@ -42,7 +42,7 @@ function ProfileForm({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [city, setCity] = useState(user.city);
   const [bio, setBio] = useState(user.bio);
   const [interests, setInterests] = useState<string[]>(
-    user.interests ? user.interests.split(",").map((s) => s.trim()).filter(Boolean) : []
+    user.interests ? user.interests.split(",").map((s: string) => s.trim()).filter(Boolean) : []
   );
   const [nameError, setNameError] = useState<string>();
   const [formError, setFormError] = useState<string | null>(null);
@@ -184,7 +184,7 @@ function ProfileForm({ user, onLogout }: { user: User; onLogout: () => void }) {
           <fieldset>
             <legend className="mb-2 text-[13px] font-semibold text-[#2B7FB8]">What would you like to do more of?</legend>
             <div className="flex flex-wrap gap-2">
-              {INTERESTS.map((i) => {
+              {INTERESTS.map((i: string) => {
                 const on = interests.includes(i);
                 return (
                   <button

@@ -11,13 +11,22 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from PIL import Image
 
-from backend.app.ml.vlm import (
-    _VLMResponse,
-    _apply_rules,
-    _extract_json,
-    _stub_response,
-    vlm_analyze,
-)
+try:
+    from app.ml.vlm import (
+        _VLMResponse,
+        _apply_rules,
+        _extract_json,
+        _stub_response,
+        vlm_analyze,
+    )
+except ImportError:
+    from backend.app.ml.vlm import (
+        _VLMResponse,
+        _apply_rules,
+        _extract_json,
+        _stub_response,
+        vlm_analyze,
+    )
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 

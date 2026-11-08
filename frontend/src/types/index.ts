@@ -47,6 +47,13 @@ export interface AnalyzeResponse {
   damage: DamageAnalysis;
   tag: TagAnalysis;
   composition_status: CompositionStatus;
+  source?: "vlm" | "stub" | "local";
+  reasoning?: {
+    material?: string;
+    condition?: string;
+    damage?: string;
+    tag?: string;
+  } | null;
 }
 
 export interface PartnerDropoff {

@@ -66,6 +66,10 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
   const isCompositionUncertain =
     analysis.composition_status === "uncertain" || analysis.material.label === "uncertain";
 
+  const isVLM = analysis.source === "vlm";
+  const isStub = !analysis.source || analysis.source === "stub";
+  const reasoning = analysis.reasoning;
+
   const materialPct = Math.round(analysis.material.confidence * 100);
   const conditionPct = Math.round(analysis.condition.confidence * 100);
   const damagePct = analysis.damage.area_percent;
@@ -118,10 +122,23 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-[#e6eef5] px-3 py-1 text-xs font-semibold text-[#0b2a44]">
-            <CheckCircle2 className="h-3.5 w-3.5 text-[#1d5c8c]" aria-hidden />
-            Analysis complete
-          </p>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-[#e6eef5] px-3 py-1 text-xs font-semibold text-[#0b2a44]">
+              <CheckCircle2 className="h-3.5 w-3.5 text-[#1d5c8c]" aria-hidden />
+              Analysis complete
+            </p>
+            {isVLM && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                <Sparkles className="h-3.5 w-3.5 text-blue-600" aria-hidden />
+                AI vision analysis (estimate)
+              </span>
+            )}
+            {isStub && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                Demo mode
+              </span>
+            )}
+          </div>
           <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Your garment, assessed</h1>
           <p className="mt-2 text-sm text-slate-600">Here is what we found. Review it, then see your best options.</p>
         </div>
@@ -186,6 +203,12 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
             </div>
           </div>
 
+          {reasoning?.material && (
+            <p className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs leading-relaxed text-slate-600 italic">
+              “{reasoning.material}”
+            </p>
+          )}
+
           {analysis.material.heatmap_base64 && (
             <div className="mt-auto pt-5">
               <button
@@ -229,6 +252,12 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
             </div>
           </div>
 
+          {reasoning?.condition && (
+            <p className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs leading-relaxed text-slate-600 italic">
+              “{reasoning.condition}”
+            </p>
+          )}
+
           {analysis.condition.heatmap_base64 && (
             <div className="mt-auto pt-5">
               <button
@@ -268,7 +297,7 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
 
           <div className="mt-5">
             <div className="mb-1.5 flex justify-between text-xs font-semibold text-slate-600">
-              <span>Share of damaged area</span>
+              <span>Share of damaged area (estimated)</span>
               <span>{damagePct}%</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-slate-100">
@@ -280,6 +309,12 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
               />
             </div>
           </div>
+
+          {reasoning?.damage && (
+            <p className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs leading-relaxed text-slate-600 italic">
+              “{reasoning.damage}”
+            </p>
+          )}
         </article>
 
         {/* Care label */}
@@ -303,6 +338,12 @@ export const AnalysisResultsSection: React.FC<AnalysisResultsSectionProps> = ({
                 </span>
               ))}
             </div>
+          )}
+
+          {reasoning?.tag && (
+            <p className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs leading-relaxed text-slate-600 italic">
+              “{reasoning.tag}”
+            </p>
           )}
 
           <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-5 text-xs text-slate-500">

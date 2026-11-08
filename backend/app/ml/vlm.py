@@ -27,18 +27,32 @@ from typing import Any, Dict, List, Optional, Tuple
 from PIL import Image
 from pydantic import BaseModel, Field, field_validator
 
-from backend.app.config import settings
-from backend.app.schemas import (
-    AnalyzeResponse,
-    CompositionStatus,
-    ConditionAnalysis,
-    ConditionLabel,
-    DamageAnalysis,
-    DamageBox,
-    MaterialAnalysis,
-    MaterialLabel,
-    TagAnalysis,
-)
+try:
+    from app.config import settings
+    from app.schemas import (
+        AnalyzeResponse,
+        CompositionStatus,
+        ConditionAnalysis,
+        ConditionLabel,
+        DamageAnalysis,
+        DamageBox,
+        MaterialAnalysis,
+        MaterialLabel,
+        TagAnalysis,
+    )
+except ImportError:
+    from backend.app.config import settings
+    from backend.app.schemas import (
+        AnalyzeResponse,
+        CompositionStatus,
+        ConditionAnalysis,
+        ConditionLabel,
+        DamageAnalysis,
+        DamageBox,
+        MaterialAnalysis,
+        MaterialLabel,
+        TagAnalysis,
+    )
 
 logger = logging.getLogger("ml.vlm")
 
@@ -386,7 +400,10 @@ def _apply_rules(parsed: _VLMResponse) -> Tuple[AnalyzeResponse, str]:
         agrees = True
     else:
         # Classify tag material coarsely
-        from backend.app.ml.tag.parse import determine_tag_coarse_type
+        try:
+            from app.ml.tag.parse import determine_tag_coarse_type
+        except ImportError:
+            from backend.app.ml.tag.parse import determine_tag_coarse_type
         tag_material = determine_tag_coarse_type(composition)
         if mat_label == "uncertain":
             agrees = True
